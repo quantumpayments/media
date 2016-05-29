@@ -4,7 +4,7 @@
 var fs         = require('fs')
 var program    = require('commander')
 var wc_db      = require('wc_db')
-var webcredits = require('webcredits')
+var qpm_media  = require('../')
 
 /**
  * version as a command
@@ -21,14 +21,8 @@ function bin(argv) {
 
   config.database = program.database || config.database || defaultDatabase
 
-  var db = wc_db.getConnection(config.db)
-  var sql = fs.readFileSync('model/Media.sql').toString()
-  console.log(sql)
-  db.query(sql).then(function(ret){
-    console.log(ret)
-  }).catch(function(err) {
-    console.log(err)
-  })
+
+  qpm_media.createTables()
 
 }
 
