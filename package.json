@@ -29,6 +29,7 @@
     "express-session": "^1.13.0",
     "http-error": "0.0.6",
     "sequelize": "^3.23.2",
+    "solidbot": "0.0.3",
     "vhost": "^3.0.2",
     "wc_db": "0.0.1",
     "webcredits": "^0.1.10",
