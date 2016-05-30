@@ -2,7 +2,7 @@
 
 // requires
 var program    = require('commander')
-var wc         = require('../')
+var qpm_media  = require('../')
 var express    = require('express')
 
 function bin(argv) {
@@ -18,7 +18,7 @@ function bin(argv) {
 
   var app
   try {
-    app = wc.createServer(program)
+    app = qpm_media.createServer(program)
   } catch (e) {
     if (e.code === 'EACCES') {
       console.log('You need root privileges to start on this port')
