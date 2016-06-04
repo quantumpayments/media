@@ -4,7 +4,10 @@
 var fs         = require('fs')
 var program    = require('commander')
 var wc_db      = require('wc_db')
+var Q          = require("q");
 var qpm_media  = require('../')
+var qpm_queue  = require('qpm_queue')
+
 
 /**
  * version as a command
@@ -12,6 +15,12 @@ var qpm_media  = require('../')
 function bin(argv) {
   // setup config
   var config = require('../config/config.js')
+
+  var uri = argv[2]
+  if (!uri || uri === '') {
+    return 'You must enter a valid uri'
+  }
+
 
   program
   .option('-d, --database <database>', 'Database')
@@ -21,8 +30,25 @@ function bin(argv) {
 
   config.database = program.database || config.database || defaultDatabase
 
+  var uris = [uri];
 
-  qpm_media.addMedia(argv[2])
+  // Usage
+  var i = 0;
+  qpm_queue.promiseWhile(function () { return i < uris.length }, function () {
+    qpm_media.addMedia(uris[i]).then(function(res) {
+      console.log(res)
+    }).catch(function(err){
+      console.error(err)
+    })
+
+    console.log(i);
+    i++;
+    return Q.delay(1000); // arbitrary async
+  }).then(function () {
+      console.log("done");
+  }).done();
+
+
 
 }
 
