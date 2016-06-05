@@ -16,21 +16,26 @@ function bin(argv) {
   // setup config
   var config = require('../config/config.js')
 
-  var uri = argv[2]
-  if (!uri || uri === '') {
-    return 'You must enter a valid uri'
-  }
 
 
   program
+  .arguments('<uri> [uris...]')
   .option('-d, --database <database>', 'Database')
   .parse(argv)
+
+
+  console.log(program);
+
+
 
   var defaultDatabase = 'media'
 
   config.database = program.database || config.database || defaultDatabase
 
-  var uris = [uri];
+  var uris = program.args;
+  if (!uris || uris.length === 0) {
+    return 'You must enter a valid uri'
+  }
 
   // Usage
   var i = 0;
