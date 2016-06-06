@@ -24,10 +24,6 @@ function bin(argv) {
   .parse(argv)
 
 
-  console.log(program);
-
-
-
   var defaultDatabase = 'media'
 
   config.database = program.database || config.database || defaultDatabase

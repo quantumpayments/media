@@ -6,5 +6,5 @@ CREATE TABLE `Rating` (
   `reviewer` VARCHAR(767),
   `source` VARCHAR(767),
   PRIMARY KEY (`id`),
-  UNIQUE KEY `constr_uri` (`uri`)
+  UNIQUE KEY `unique_index` (`uri`,`reviewer`)
 )

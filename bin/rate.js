@@ -17,7 +17,7 @@ function bin(argv) {
 
 
   program
-  .arguments('<uri> [uris...]')
+  .arguments('<uri> <amount> <reviewer>')
   .option('-d, --database <database>', 'Database')
   .parse(argv)
 
@@ -31,7 +31,7 @@ function bin(argv) {
   rating.rating = program.args[1]
   rating.reviewer = program.args[2]
 
-
+  // validate
   if (!rating.uri || rating.uri === '') {
     console.error('You must enter a valid uri')
     return
@@ -48,15 +48,20 @@ function bin(argv) {
   }
 
 
-  // Usage
-  var i = 0;
-  qpm_media.addRating(rating).then(function(res) {
-    console.log(res)
+  // main
+  qpm_media.addRating(rating, config).then(function(ret) {
+    if (ret.conn) {
+      var conn = ret.conn
+      conn.close()
+    }
+    console.log(ret.ret)
   }).catch(function(err){
-    console.error(err)
+    if (err.conn) {
+      var conn = err.conn
+      conn.close()
+    }
+    console.error(err.err)
   })
-
-
 
 
 }
