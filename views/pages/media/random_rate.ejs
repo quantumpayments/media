@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <% include ../../partials/head %>
+</head>
+<body>
+
+  <% include ../../partials/nav %>
+
+  <div class="content-wrapper">
+    <section class="content-header">
+
+      <div>
+         <img src="<%= ui.image %>"><br>
+         Original image <a target="_blank" href="<%= ui.image  %>"><%= ui.image %></a><br>
+         <a href="/balance">Balance</a> : <%= ui.balance %> |
+         <a href="/random">Refresh</a><br>
+      </div>
+
+      <form method="post" action="rate">
+        <input type="hidden" value="<%= ui.image %>" name="uri">
+        <hr>
+        Rating :
+        <select name="rating">
+          <option value="0" selected="selected">0</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+        </select>
+        <hr>
+        <input type="submit" value="Rate">
+      </form>
+
+    </section>
+  </div>
+
+  <footer>
+    <% include ../../partials/footer %>
+  </footer>
+
+</body>
+</html>
