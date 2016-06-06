@@ -1,6 +1,6 @@
 {
   "name": "qpm_media",
-  "version": "0.0.29",
+  "version": "0.0.30",
   "description": "media server",
   "main": "index.js",
   "scripts": {
@@ -25,6 +25,7 @@
     "commander": "^2.9.0",
     "cors": "^2.7.1",
     "dateformat": "^1.0.12",
+    "debug": "^2.2.0",
     "ejs": "^2.4.2",
     "express": "^4.13.4",
     "express-session": "^1.13.0",
@@ -39,6 +40,7 @@
     "solidbot": "0.0.3",
     "vhost": "^3.0.2",
     "wc_db": "0.0.1",
+    "wc_express": "0.0.4",
     "webcredits": "^0.1.10",
     "webid": "^0.3.7"
   }
