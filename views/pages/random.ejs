@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <% include ../partials/head %>
+</head>
+<body>
+
+  <% include ../partials/nav %>
+
+  <div class="content-wrapper">
+    <section class="content-header">
+
+      <div>
+         <img src="<%= ui.image %>"><br>
+         Original image <a target="_blank" href="<%= ui.image  %>"><%= ui.image %></a><br>
+         <a href="/balance">Balance</a> : <%= ui.balance %> |
+         <a href="/random">Refresh</a><br>
+      </div>
+
+
+    </section>
+  </div>
+
+  <footer>
+    <% include ../partials/footer %>
+  </footer>
+
+</body>
+</html>
