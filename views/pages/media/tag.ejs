@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <% include ../../partials/head %>
+</head>
+<body>
+
+  <% include ../../partials/nav %>
+
+  <div class="content-wrapper">
+    <section class="content-header">
+
+      <div>
+
+        <hr>
+        <h4>Tags</h4>
+        <hr>
+
+
+        <% for(var i=0; i<ui.tags.length; i++) { %>
+           <p><%= ui.tags[i].id %>. <a href="tag?tag=<%= ui.tags[i].id %>"><%= ui.tags[i].tag %> </a></p>
+        <% } %>
+
+
+        <hr>
+        <h4>Add New Tag</h4>
+        <hr>
+
+        <form method="post" action="tag">
+          <hr>
+          Tag : <input name="addtag">
+          <hr>
+          <input type="submit" value="Add">
+        </form>
+
+
+        <hr>
+        <h4>Add Tag to URI</h4>
+        <hr>
+
+        <form method="post" action="tag">
+          <hr>
+          Tag: <input name="tagname">
+          <hr>
+          URI: <input name="uri">
+          <hr>
+          <input type="submit" value="Add">
+        </form>
+
+
+
+      </div>
+
+    </section>
+  </div>
+
+  <footer>
+    <% include ../../partials/footer %>
+  </footer>
+
+</body>
+</html>
