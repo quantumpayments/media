@@ -20,6 +20,13 @@
            <p><%= ui.top[i].rating %>. <a href="random_rate?uri=<%= ui.top[i].uri %>"><%= ui.top[i].uri %> </a></p>
         <% } %>
 
+        Global top content
+
+
+        <% for(var i=0; i<ui.global.length; i++) { %>
+           <p><%= ui.global[i].rating %>. <a href="random_rate?uri=<%= ui.global[i].uri %>"><%= ui.global[i].uri %> </a></p>
+        <% } %>
+
 
       </div>
 
