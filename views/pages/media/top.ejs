@@ -13,14 +13,19 @@
       <div>
 
 
-        My top content
+        <hr>
+        <h4>My top content</h4>
+        <hr>
 
 
         <% for(var i=0; i<ui.top.length; i++) { %>
            <p><%= ui.top[i].rating %>. <a href="random_rate?uri=<%= ui.top[i].uri %>"><%= ui.top[i].uri %> </a></p>
         <% } %>
 
-        Global top content
+
+        <hr>
+        <h4>Global top content<h4>
+        <hr>
 
 
         <% for(var i=0; i<ui.global.length; i++) { %>
