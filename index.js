@@ -4,6 +4,7 @@ module.exports.handlers = {
   random : require('./lib/handlers/random'),
   random_rate : require('./lib/handlers/random_rate'),
   rate : require('./lib/handlers/rate'),
+  top : require('./lib/handlers/search'),
   tag : require('./lib/handlers/tag'),
   top : require('./lib/handlers/top')
 }

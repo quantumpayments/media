@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <% include ../../partials/head %>
+</head>
+<body>
+
+  <% include ../../partials/nav %>
+
+  <div class="content-wrapper">
+    <section class="content-header">
+
+      <div>
+
+
+
+
+        <hr>
+        <h4>Global top content</h4>
+        <hr>
+
+
+        <% for(var i=0; i<ui.global.length; i++) { %>
+           <p><%= ui.global[i].rating %>. <a href="random_rate?uri=<%= ui.global[i].uri %>"><%= ui.global[i].uri %> </a></p>
+        <% } %>
+
+
+      </div>
+
+    </section>
+  </div>
+
+  <footer>
+    <% include ../../partials/footer %>
+  </footer>
+
+</body>
+</html>
