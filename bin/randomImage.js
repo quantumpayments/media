@@ -23,7 +23,7 @@ function bin(argv) {
   config.database = program.database || config.database || defaultDatabase
   var url = process.argv[2] || 'https://www.reddit.com/r/perfectloops/top/?sort=top&t=all&count=25&after=t3_4j0v4f'
 
-  qpm_media.getRandomImage(function(err, ret){
+  qpm_media.getRandomUnseenImage(function(err, ret){
     if (err) {
       console.error(err)
     } else {
