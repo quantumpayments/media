@@ -1,4 +1,4 @@
-CREATE TABLE `CREATE TABLE `Fragment` (
+CREATE TABLE `Fragment` (
   `id` int(11) DEFAULT NULL,
   `start` double DEFAULT NULL,
   `end` double DEFAULT NULL,
