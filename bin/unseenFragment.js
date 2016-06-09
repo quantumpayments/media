@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 // requires
+require('console.table')
 var fs         = require('fs')
 var program    = require('commander')
 var wc_db      = require('wc_db')
@@ -23,12 +24,12 @@ function bin(argv) {
   config.database = program.database || config.database || defaultDatabase
   var url = process.argv[2] || 'https://www.reddit.com/r/perfectloops/top/?sort=top&t=all&count=25&after=t3_4j0v4f'
 
-  qpm_media.getRandomUnseenFragment(function(err, ret){
-    if (err) {
-      console.error(err)
-    } else {
-      console.log(ret[0][0].uri);
-    }
+
+  qpm_media.getRandomUnseenFragment(null, config).then(function(ret){
+    console.table(ret.ret[0])
+    ret.conn.close()
+  }).catch(function (err) {
+    console.error(err)
   })
 
 
