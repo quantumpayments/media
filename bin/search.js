@@ -17,17 +17,19 @@ function bin(argv) {
 
   program
   .option('-d, --database <database>', 'Database')
+  .option('-t, --tag <tag>', 'Tag')
   .parse(argv)
 
   var defaultDatabase = 'media'
 
   config.database = program.database || config.database || defaultDatabase
-  var q = process.argv[2] || ''
+  var q = program.args[0] || ''
 
   params = {}
   params.q = q
+  params.tag = program.tag
 
-  qpm_media.search(params).then(function(ret){
+  qpm_media.search(params, config).then(function(ret){
     console.table(ret.ret[0])
     ret.conn.close()
   }).catch(function (err) {
