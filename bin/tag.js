@@ -29,7 +29,7 @@ function bin(argv) {
   params.uri = uri
   params.tag = tag
 
-  qpm_media.search(params).then(function(ret){
+  qpm_media.addMediaTag(params).then(function(ret){
     console.table(ret.ret[0])
     ret.conn.close()
   }).catch(function (err) {
