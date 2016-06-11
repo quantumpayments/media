@@ -1,6 +1,6 @@
 {
   "name": "qpm_media",
-  "version": "0.0.72",
+  "version": "0.0.73",
   "description": "media server",
   "main": "index.js",
   "scripts": {
@@ -27,11 +27,14 @@
     "cors": "^2.7.1",
     "dateformat": "^1.0.12",
     "debug": "^2.2.0",
+    "delete": "^0.3.2",
     "ejs": "^2.4.2",
     "express": "^4.13.4",
     "express-session": "^1.13.0",
+    "hhmmss": "^1.0.0",
     "http-error": "0.0.6",
     "negotiator": "^0.6.1",
+    "path": "^0.12.7",
     "q": "^1.4.1",
     "qpm_balance": "0.0.11",
     "qpm_faucet": "^0.1.11",
