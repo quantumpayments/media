@@ -11,9 +11,13 @@
     <section class="content-header">
 
       <div>
-         <img src="<%= ui.content %>"><br>
-         Original content <a target="_blank" href="<%= ui.content  %>"><%= ui.content %></a>
-         <hr>
+        <audio controls>
+          <source src="<%= ui.content %>" type="audio/mpeg">
+          Your browser does not support the audio tag.
+        </audio>
+        <hr>
+
+         Original content <a target="_blank" href="<%= ui.content  %>"><%= ui.content %></a><br>
          <a href="/balance">Balance</a> : <%= ui.balance %> |
          <a href="/random">Refresh</a><br>
 
