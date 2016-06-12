@@ -15,7 +15,7 @@ var config = {
   db : {
     dialect  : 'mysql',
     host     : 'localhost',
-    database : 'new',
+    database : 'webcredits',
     username : 'me',
     password : ''
   },
