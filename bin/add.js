@@ -36,8 +36,9 @@ function bin(argv) {
   // Usage
   var i = 0;
   qpm_queue.promiseWhile(function () { return i < uris.length }, function () {
-    qpm_media.addMedia(uris[i]).then(function(res) {
-      console.log(res)
+    qpm_media.addMedia(uris[i]).then(function(ret) {
+      console.log(ret)
+      ret.conn.close()
     }).catch(function(err){
       console.error(err)
     })
