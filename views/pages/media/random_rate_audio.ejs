@@ -11,7 +11,7 @@
     <section class="content-header">
 
       <div>
-        <audio controls>
+        <audio id="media" controls>
           <source src="<%= ui.content %>" type="audio/mpeg">
           Your browser does not support the audio tag.
         </audio>
@@ -52,6 +52,8 @@
   <footer>
     <% include ../../partials/footer %>
   </footer>
-
+  <script>
+    document.getElementById('media').currentTime=(<%= ui.currentTime %>);
+  </script>
 </body>
 </html>
