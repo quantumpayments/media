@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <% include ../../partials/head %>
+</head>
+<body>
+
+  <% include ../../partials/nav %>
+
+  <div class="content-wrapper">
+    <section class="content-header">
+
+      <div>
+
+        <video id="media" autobuffer controls>
+          <source src="<%= ui.content %>" type="video/mp4">
+        Your browser does not support the video tag.
+        </video>
+
+        <hr>
+
+         Original content <a target="_blank" href="<%= ui.content  %>"><%= ui.content %></a><br>
+         <a href="/balance">Balance</a> : <%= ui.balance %> |
+         <a href="/random">Refresh</a><br>
+
+      </div>
+
+      <form method="post" action="rate">
+        <input type="hidden" value="<%= ui.content %>" name="uri">
+        <hr>
+        Rating :
+        <select name="rating">
+          <option value="0" selected="selected">0</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+        </select> <% if (ui.rating) {  %>  Current vote <%= ui.rating %>  <%  } %>
+        <hr>
+        <input type="submit" value="Rate">
+      </form>
+      <hr>
+      Tags: <%= ui.tags %>
+
+    </section>
+  </div>
+
+  <footer>
+    <% include ../../partials/footer %>
+  </footer>
+  <script>
+    document.getElementById('media').currentTime=(<%= ui.currentTime %>);
+  </script>
+</body>
+</html>
