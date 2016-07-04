@@ -108,12 +108,20 @@ function getMedia(uri, cert, mode) {
 
       var bufferPath = __dirname + '/../data/buffer/'
       var files = fs.readdirSync(bufferPath)
-      var nextFile = __dirname + '/../data/buffer/' + files[0]
-      var ret = { 'uri' : nextFile, 'cacheURI' : urlencode.decode(files[0]) }
-      resolve(ret)
+      if (files && files[0]) {
+        var nextFile = __dirname + '/../data/buffer/' + files[0]
+        var ret = { 'uri' : nextFile, 'cacheURI' : urlencode.decode(files[0]) }
+        resolve(ret)
+      } else {
+        reject(new Error('nothing in buffer'))
+      }
 
       setTimeout(() => {
-        fs.unlink(nextFile)
+        try {
+          fs.unlinkSync(nextFile)
+        } catch (e) {
+          console.error(e)
+        }
         qpm_media.getRandomUnseenImage().then(function(row) {
           debug('unseen', row.ret)
           var cacheURI = row.ret[0][0].cacheURI
