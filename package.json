@@ -1,6 +1,6 @@
 {
   "name": "qpm_media",
-  "version": "0.0.86",
+  "version": "0.0.87",
   "description": "media server",
   "main": "index.js",
   "scripts": {
@@ -45,7 +45,7 @@
     "vhost": "^3.0.2",
     "wc_db": "0.0.4",
     "wc_express": "0.0.4",
-    "webcredits": "^0.1.10",
+    "webcredits": "^0.1.24",
     "webid": "^0.3.7"
   }
 }
