@@ -12,6 +12,11 @@ var qpm_media     = require('../lib/qpm_media')
 var request       = require('request')
 var urlencode     = require('urlencode')
 var webcredits    = require('webcredits')
+var wc_db         = require('wc_db')
+
+
+var workbot = 'https://workbot.databox.me/profile/card#me'
+var cost    = 40
 
 
 debug('requires loaded')
@@ -31,10 +36,11 @@ function bin(argv) {
   var cert    = process.argv[3] || process.env['CERT']
   var display = process.argv[4] || process.env['DISP'] || 'display'
   var mode    = process.argv[5] || 'buffer'
+  var user    = process.argv[6] || 'http://melvincarvalho.com/#me'
 
   var config = require(__dirname + '/../config/config.js')
 
-  getMedia(uri, cert, mode).then(function(row) {
+  getMedia(uri, cert, mode, user).then(function(row) {
 
     var uri = row.uri
     var cacheURI = row.cacheURI
@@ -54,13 +60,20 @@ function bin(argv) {
 }
 
 
-function balance(source, config, conn) {
+function balance(source, conn, config) {
+
+  var config = require(__dirname + '/../config/config.js')
+  debug('balance', config)
+  var conn = wc_db.getConnection(config.db)
 
   return new Promise(function(resolve, reject) {
-    webcredits.balance(source, config, conn, function(err,ret) {
+    webcredits.getBalance(source, conn, config, function(err,ret) {
+      debug('balance', 'entered')
       if (err) {
+        debug('err', err)
         reject(err)
       } else {
+        debug('balance', ret)
         resolve(ret)
       }
     })
@@ -68,18 +81,22 @@ function balance(source, config, conn) {
 
 }
 
+
 function pay(credit, config, conn) {
 
+  var config = require(__dirname + '/../config/config.js')
+  debug('pay', config)
+  var conn = wc_db.getConnection(config.db)
+
   return new Promise(function(resolve, reject) {
-    webcredits.balance(url, config, conn, function(err,ret) {
+    webcredits.insert(credit, conn, config, function(err,ret) {
       if (err) {
-        reject(err)
+        debug('pay', err)
       } else {
-        resolve(ret)
+        debug('pay', ret.ret)
       }
     })
   })
-
 
 }
 
@@ -88,61 +105,104 @@ function pay(credit, config, conn) {
  * @param  {string} uri  The uri to get it from.
  * @param  {string} cert Location of an X.509 cert.
  * @param  {string} mode Mode api | http | buffer.
+ * @param  {string} user The WebID of the user.
  * @return {object}      Promise with the row.
  */
-function getMedia(uri, cert, mode) {
+function getMedia(uri, cert, mode, user) {
 
   return new Promise(function(resolve, reject) {
 
     if (mode === 'api') {
 
-      qpm_media.getRandomUnseenImage().then(function(row) {
-        row.conn.close()
-        resolve(row.ret[0][0])
-      }).catch(function(err) {
-        row.conn.close()
-        reject(err)
+      balance(user).then((ret)=>{
+        return ret
+      }).then(function(ret){
+        if (ret >= cost) {
+          qpm_media.getRandomUnseenImage().then(function(row) {
+            row.conn.close()
+            resolve(row.ret[0][0])
+
+            // pay
+            var credit = {}
+            credit['https://w3id.org/cc#source'] = user
+            credit['https://w3id.org/cc#amount'] = cost
+            credit['https://w3id.org/cc#currency'] = 'https://w3id.org/cc#bit'
+            credit['https://w3id.org/cc#destination'] = workbot
+            pay(credit)
+
+
+          }).catch(function(err) {
+            row.conn.close()
+            reject(err)
+          })
+        } else {
+          reject(new Error('not enough funds'))
+        }
       })
+
 
     } else if (mode === 'buffer') {
 
-      var bufferPath = __dirname + '/../data/buffer/'
-      var files = fs.readdirSync(bufferPath)
-      if (files && files[0]) {
-        var nextFile = __dirname + '/../data/buffer/' + files[0]
-        var ret = { 'uri' : nextFile, 'cacheURI' : urlencode.decode(files[0]) }
-        resolve(ret)
-      } else {
-        reject(new Error('nothing in buffer'))
-      }
+      balance(user).then((ret)=>{
+        return ret
+      }).then(function(ret){
+        if (ret >= cost) {
 
-      setTimeout(() => {
-        try {
-          fs.unlinkSync(nextFile)
-        } catch (e) {
-          console.error(e)
-        }
-        qpm_media.getRandomUnseenImage().then(function(row) {
-          debug('unseen', row.ret)
-          var cacheURI = row.ret[0][0].cacheURI
-          var filePath = cacheURI.substr('file://'.length)
-          console.log('copying', filePath)
 
-          fs.copy(filePath, bufferPath + urlencode(cacheURI), function (err) {
-            if (err) {
-              console.error(err)
-            } else {
-              console.log("success!")
-              if (row && row.conn) {
-                row.conn.close()
-              }
+          var bufferPath = __dirname + '/../data/buffer/'
+          var files = fs.readdirSync(bufferPath)
+          if (files && files[0]) {
+            var nextFile = __dirname + '/../data/buffer/' + files[0]
+            var ret = { 'uri' : nextFile, 'cacheURI' : urlencode.decode(files[0]) }
+            resolve(ret)
+          } else {
+            reject(new Error('nothing in buffer'))
+          }
+
+          setTimeout(() => {
+            try {
+              fs.unlinkSync(nextFile)
+            } catch (e) {
+              console.error(e)
             }
+            qpm_media.getRandomUnseenImage().then(function(row) {
+              debug('unseen', row.ret)
+              var cacheURI = row.ret[0][0].cacheURI
+              var filePath = cacheURI.substr('file://'.length)
+              console.log('copying', filePath)
 
-          })
+              fs.copy(filePath, bufferPath + urlencode(cacheURI), function (err) {
+                if (err) {
+                  console.error(err)
+                } else {
+                  console.log("success!")
+                  // pay
+                  var credit = {}
+                  credit['https://w3id.org/cc#source'] = user
+                  credit['https://w3id.org/cc#amount'] = cost
+                  credit['https://w3id.org/cc#currency'] = 'https://w3id.org/cc#bit'
+                  credit['https://w3id.org/cc#destination'] = workbot
+                  pay(credit)
 
-        })
+                  if (row && row.conn) {
+                    row.conn.close()
+                  }
+                }
 
-      }, 1000)
+              })
+
+            })
+
+          }, 1000)
+
+
+
+        } else {
+          reject(new Error('not enough funds'))
+        }
+      })
+
+
 
 
     } else if (mode === 'http') {
