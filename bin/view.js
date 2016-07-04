@@ -16,7 +16,7 @@ var wc_db         = require('wc_db')
 
 
 var workbot = 'https://workbot.databox.me/profile/card#me'
-var cost    = 40
+var cost    = 25
 
 
 debug('requires loaded')
