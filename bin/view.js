@@ -148,12 +148,16 @@ function getMedia(uri, cert, mode, user) {
       }).then(function(ret){
         if (ret >= cost) {
 
-
-          var bufferPath = __dirname + '/../data/buffer/'
+          var bufferPath = __dirname + '/../data/buffer/image/'
           var files = fs.readdirSync(bufferPath)
+          files.sort(function(a, b) {
+             return fs.statSync(bufferPath + b).mtime.getTime() -
+                    fs.statSync(bufferPath + a).mtime.getTime()
+          })
           if (files && files[0]) {
-            var nextFile = __dirname + '/../data/buffer/' + files[0]
+            var nextFile = bufferPath + files[0]
             var ret = { 'uri' : nextFile, 'cacheURI' : urlencode.decode(files[0]) }
+            var lastFile = bufferPath + files[files.length - 1]
             resolve(ret)
           } else {
             reject(new Error('nothing in buffer'))
@@ -161,7 +165,7 @@ function getMedia(uri, cert, mode, user) {
 
           setTimeout(() => {
             try {
-              fs.unlinkSync(nextFile)
+              fs.unlinkSync(lastFile)
             } catch (e) {
               console.error(e)
             }
@@ -175,6 +179,12 @@ function getMedia(uri, cert, mode, user) {
                 if (err) {
                   console.error(err)
                 } else {
+
+                  setTimeout(function(){
+                    exec(__dirname + '/../data/buffer/hook.sh')
+                  }, 0)
+
+
                   console.log("success!")
                   // pay
                   var credit = {}
@@ -193,7 +203,7 @@ function getMedia(uri, cert, mode, user) {
 
             })
 
-          }, 1000)
+          }, 500)
 
 
 
@@ -254,7 +264,7 @@ function getMedia(uri, cert, mode, user) {
 function exec(cmd) {
   debug('executing cmd', cmd)
   child_process.exec(cmd, function(err, stdout, stderr){
-    debug('command executed')
+    debug('command completed')
   })
 }
 
