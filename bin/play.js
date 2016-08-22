@@ -269,7 +269,11 @@ function getMedia(uri, cert, mode, user, tag, path) {
               }
 
               var fn = getFnFromURI(uri)
-              qpm_media.getLastFragment().then(function(row) {
+              var params = {}
+              if (tag) {
+                params.tag = tag
+              }
+              qpm_media.getLastFragment(params).then(function(row) {
                 debug('unseen', row.ret)
                 var cacheURI = row.ret[0][0].cacheURI || row.ret[0][0].uri
                 var filePath = cacheURI.substr('file://'.length)
