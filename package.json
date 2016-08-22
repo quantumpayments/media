@@ -1,6 +1,6 @@
 {
   "name": "qpm_media",
-  "version": "0.0.103",
+  "version": "0.0.104",
   "description": "media server",
   "main": "index.js",
   "scripts": {
@@ -43,6 +43,7 @@
     "qpm_ui": "0.0.25",
     "sequelize": "^3.23.2",
     "solidbot": "0.0.8",
+    "url": "^0.11.0",
     "urlencode": "^1.1.0",
     "vhost": "^3.0.2",
     "wc_db": "0.0.4",
