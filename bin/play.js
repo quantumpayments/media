@@ -11,6 +11,7 @@ var program       = require('commander')
 var qpm_media     = require('../lib/qpm_media')
 var request       = require('request')
 var urlencode     = require('urlencode')
+var url           = require('url')
 var webcredits    = require('webcredits')
 var wc_db         = require('wc_db')
 
@@ -18,6 +19,8 @@ var wc_db         = require('wc_db')
 var workbot = 'https://workbot.databox.me/profile/card#me'
 var cost    = 40
 var type    = 0
+var root    = __dirname
+
 
 /**
 * version as a command
@@ -34,14 +37,19 @@ function bin(argv) {
   var mode    = process.argv[5] || 'buffer'
   var user    = process.argv[6] || 'http://melvincarvalho.com/#me'
   var tag     = process.argv[7]
+  var path    = process.argv[8]
+  root        = process.argv[9] || root
+
+  path = url.parse(path).path
 
   console.log(process.argv)
-  console.log(tag)
+  console.log('tag', tag)
+  console.log('path', path)
 
   var config = require(__dirname + '/../config/config.js')
 
 
-  getMedia(uri, cert, mode, user, tag).then(function(row) {
+  getMedia(uri, cert, mode, user, tag, path).then(function(row) {
 
     debug('media returned')
     debug(row)
@@ -95,10 +103,9 @@ function getFnFromURI(uri, parent) {
   var arr = uri.split('=')
   var ret = arr[arr.length-1]
   if (parent) {
-    return parent + '.' + ret
-  } else {
-    return ret
+    ret = parent + '.' + ret
   }
+  return ret
 }
 
 
@@ -133,16 +140,16 @@ function balance(source, conn, config) {
  * @param  {string} user The WebID of the user.
  * @return {object}      Promise with the row.
  */
-function getMedia(uri, cert, mode, user, tag) {
+function getMedia(uri, cert, mode, user, tag, path) {
 
   return new Promise(function(resolve, reject) {
 
     if (mode === 'api') {
 
       balance(user).then((ret)=>{
+        debug('got balance')
         return ret
       }).then(function(ret){
-        debug('got balance')
         var fn = getFnFromURI(uri, 'qpm_media')
         debug('uri', uri)
         debug('fn', fn)
@@ -221,6 +228,7 @@ function getMedia(uri, cert, mode, user, tag) {
 
     } else if (mode === 'buffer') {
       var fn = getFnFromURI(uri, 'qpm_media')
+      debug('fn', fn)
 
       if (fn === 'qpm_media.getLastFragment') {
         type = 0
@@ -230,7 +238,7 @@ function getMedia(uri, cert, mode, user, tag) {
         }).then(function(ret){
           if (ret >= cost) {
 
-            var bufferPath = __dirname + '/../data/buffer/video/'
+            var bufferPath = root + '/../' + path
             var files = fs.readdirSync(bufferPath)
             files.sort(function(a, b) {
                return fs.statSync(bufferPath + b).mtime.getTime() -
@@ -276,7 +284,7 @@ function getMedia(uri, cert, mode, user, tag) {
                     console.error(err)
                   } else {
 
-                    hook(__dirname + '/../data/buffer/hook.sh', destination)
+                    hook(root + '/..'+ path + '../hook.sh', destination)
 
                     console.log("success!")
                     // pay
@@ -312,15 +320,18 @@ function getMedia(uri, cert, mode, user, tag) {
         balance(user).then((ret)=>{
           return ret
         }).then(function(ret){
-          if (ret >= cost) {
+          if (parseInt(ret) >= parseInt(cost)) {
+            debug('balance', parseInt(ret), 'cost', parseInt(cost), 'path', path)
 
-            var bufferPath = __dirname + '/../data/buffer/video/'
+            var bufferPath = root + '/..' + path
+            debug('buffer', bufferPath)
             var files = fs.readdirSync(bufferPath)
             files.sort(function(a, b) {
                return fs.statSync(bufferPath + b).mtime.getTime() -
                       fs.statSync(bufferPath + a).mtime.getTime()
             })
             var file = getNextFile(files, type)
+            debug('next file', file)
             if (files && file) {
               var file = getNextFile(files, type)
               var nextFile = bufferPath + file
@@ -368,7 +379,7 @@ function getMedia(uri, cert, mode, user, tag) {
                     console.error(err)
                   } else {
 
-                    hook(__dirname + '/../data/buffer/hook.sh', destination)
+                    hook(root + '/..' + path + '../hook.sh', destination)
 
 
                     console.log("success!")
@@ -404,7 +415,7 @@ function getMedia(uri, cert, mode, user, tag) {
                     console.error(err)
                   } else {
 
-                    hook(__dirname + '/../data/buffer/hook.sh', destination)
+                    hook(root + '/..' + path + '../hook.sh', destination)
 
                     console.log("success!")
 
@@ -439,7 +450,7 @@ function getMedia(uri, cert, mode, user, tag) {
         }).then(function(ret){
           if (ret >= cost) {
 
-            var bufferPath = __dirname + '/../data/buffer/video/'
+            var bufferPath = root + '/..' + path
             var files = fs.readdirSync(bufferPath)
             files.sort(function(a, b) {
                return fs.statSync(bufferPath + b).mtime.getTime() -
@@ -471,7 +482,11 @@ function getMedia(uri, cert, mode, user, tag) {
               }
 
               var fn = getFnFromURI(uri)
-              qpm_media.getRandomUnseenFragment().then(function(row) {
+              var params = {}
+              if (tag) {
+                params.tag = tag
+              }
+              qpm_media.getRandomUnseenFragment(params).then(function(row) {
                 debug('unseen', row.ret)
                 var cacheURI = row.ret[0][0].cacheURI || row.ret[0][0].uri
                 var filePath = cacheURI.substr('file://'.length)
@@ -486,7 +501,7 @@ function getMedia(uri, cert, mode, user, tag) {
                     console.error(err)
                   } else {
 
-                    hook(__dirname + '/../data/buffer/hook.sh', destination)
+                    hook(root + '/..' + path + '../hook.sh', destination)
 
                     // pay
                     var credit = {}
@@ -521,7 +536,7 @@ function getMedia(uri, cert, mode, user, tag) {
                     console.error(err)
                   } else {
 
-                    hook(__dirname + '/../data/buffer/hook.sh', destination)
+                    hook(root + '/..' + path + '../hook.sh', destination)
 
                     console.log("success!")
 
@@ -740,7 +755,7 @@ function updateLastSeen(params, config) {
 }
 
 function hook(file, param, timeout) {
-  file    = file    || __dirname + '/../data/buffer/hook.sh'
+  file    = file    || root + '/..' + path + '../hook.sh'
   timeout = timeout || 0
 
   var cmd
@@ -749,7 +764,7 @@ function hook(file, param, timeout) {
   } else {
     cmd = file
   }
-  debug(cmd)
+  debug('hook', cmd)
 
   setTimeout(function(){
     exec(cmd)
