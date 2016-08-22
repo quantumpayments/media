@@ -1,0 +1,5 @@
+CREATE TABLE `User` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `uri` VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+);
