@@ -4,5 +4,7 @@ CREATE TABLE `Fragment` (
   `end` double DEFAULT NULL,
   `rating` double DEFAULT NULL,
   `lastSeen` datetime DEFAULT NULL,
-  KEY `fragment_id` (`id`)
+  `user_id` int(11) DEFAULT NULL,
+  KEY `fragment_id` (`id`),
+  UNIQUE KEY `unique_uri` (`id`, `start`, `end`, `user_id`)
 )
