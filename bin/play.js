@@ -45,6 +45,7 @@ function bin(argv) {
   console.log(process.argv)
   console.log('tag', tag)
   console.log('path', path)
+  console.log('webid', user)
 
   var config = require(__dirname + '/../config/config.js')
 
@@ -74,6 +75,7 @@ function bin(argv) {
     //params.id = json.id
     params.start = start
     params.end = end
+    params.webid = user
 
     debug('adding fragment', params)
 
@@ -273,6 +275,9 @@ function getMedia(uri, cert, mode, user, tag, path) {
               if (tag) {
                 params.tag = tag
               }
+              if (user) {
+                params.webid = user
+              }
               qpm_media.getLastFragment(params).then(function(row) {
                 debug('unseen', row.ret)
                 var cacheURI = row.ret[0][0].cacheURI || row.ret[0][0].uri
@@ -367,7 +372,9 @@ function getMedia(uri, cert, mode, user, tag, path) {
                 fn = qpm_media.getTaggedFragment
                 params.tag = tag
               }
-              console.log('tag', tag);
+              if (user) {
+                params.webid = user
+              }
               fn(params).then(function(row) {
                 debug('unseen', row.ret)
                 var cacheURI = row.ret[0][0].cacheURI || row.ret[0][0].uri
@@ -404,7 +411,14 @@ function getMedia(uri, cert, mode, user, tag, path) {
 
               })
 
-              qpm_media.getLastFragment().then(function(row) {
+              var params = {}
+              if (tag) {
+                params.tag = tag
+              }
+              if (user) {
+                params.webid = user
+              }
+              qpm_media.getLastFragment(params).then(function(row) {
                 debug('unseen', row.ret)
                 var cacheURI = row.ret[0][0].cacheURI || row.ret[0][0].uri
                 var filePath = cacheURI.substr('file://'.length)
@@ -490,6 +504,9 @@ function getMedia(uri, cert, mode, user, tag, path) {
               if (tag) {
                 params.tag = tag
               }
+              if (user) {
+                params.webid = user
+              }
               qpm_media.getRandomUnseenFragment(params).then(function(row) {
                 debug('unseen', row.ret)
                 var cacheURI = row.ret[0][0].cacheURI || row.ret[0][0].uri
@@ -525,14 +542,22 @@ function getMedia(uri, cert, mode, user, tag, path) {
               })
 
 
-              qpm_media.getLastFragment().then(function(row) {
+              debug('now getting last fragment seen')
+              var params = {}
+              if (tag) {
+                params.tag = tag
+              }
+              if (user) {
+                params.webid = user
+              }
+              qpm_media.getLastFragment(params).then(function(row) {
                 debug('unseen', row.ret)
                 var cacheURI = row.ret[0][0].cacheURI || row.ret[0][0].uri
                 var filePath = cacheURI.substr('file://'.length)
                 var destination =  row.ret[0][0].end + ',' + 0 + ',' + urlencode(cacheURI) + '.mp4'
                 console.log('copying', filePath)
 
-                var cmd = 'ffmpeg -i "' + filePath + '" -ss '+ row.ret[0][0].end +' -movflags faststart -strict -2 -t 00:00:15 "' + bufferPath + destination + '"'
+                var cmd = 'sleep 1 ; ffmpeg -i "' + filePath + '" -ss '+ row.ret[0][0].end +' -movflags faststart -strict -2 -t 00:00:15 "' + bufferPath + destination + '"'
                 debug(cmd)
 
                 exec(cmd, function (err) {
