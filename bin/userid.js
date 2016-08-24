@@ -22,22 +22,17 @@ function bin(argv) {
   var defaultDatabase = 'media'
 
   config.database = program.database || config.database || defaultDatabase
-  var rating = process.argv[2]
-  var webid  = process.argv[3] || 'http://melvincarvalho.com/#me'
-  var params = {}
-  params.rating = rating
-  params.reviewer = webid
+  var uri = process.argv[2] || ''
 
-  console.log(rating)
+  params = {}
+  params.uri = uri
 
-  qpm_media.rateLastSeen(params, config).then(function(ret){
-    console.table(ret.ret[0])
+  qpm_media.getUserId(params).then(function(ret){
+    console.log(ret.ret)
     ret.conn.close()
   }).catch(function (err) {
     console.error(err)
   })
-
-
 
 }
 

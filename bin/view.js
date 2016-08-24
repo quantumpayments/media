@@ -38,6 +38,8 @@ function bin(argv) {
   var mode    = process.argv[5] || 'buffer'
   var user    = process.argv[6] || 'http://melvincarvalho.com/#me'
 
+  debug(argv)
+
   var config = require(__dirname + '/../config/config.js')
 
   getMedia(uri, cert, mode, user).then(function(row) {
@@ -51,6 +53,7 @@ function bin(argv) {
     debug('row', row)
     exec(cmd)
     var params = { cacheURI : cacheURI }
+    params.reviewer = user
     updateLastSeen(params, config)
 
   }).catch(function(err){
@@ -169,7 +172,9 @@ function getMedia(uri, cert, mode, user) {
             } catch (e) {
               console.error(e)
             }
-            qpm_media.getRandomUnseenImage().then(function(row) {
+            var params = {}
+            params.reviewer = user
+            qpm_media.getRandomUnseenImage(params).then(function(row) {
               debug('unseen', row.ret)
               var cacheURI = row.ret[0][0].cacheURI
               var filePath = cacheURI.substr('file://'.length)
