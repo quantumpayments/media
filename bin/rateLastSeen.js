@@ -27,6 +27,7 @@ function bin(argv) {
   var params = {}
   params.rating = rating
   params.webid = webid
+  params.reviewer = webid
 
   console.log(rating)
 
