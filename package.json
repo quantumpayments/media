@@ -1,6 +1,6 @@
 {
   "name": "qpm_media",
-  "version": "0.0.118",
+  "version": "0.0.119",
   "description": "media server",
   "main": "index.js",
   "scripts": {
