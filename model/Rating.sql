@@ -5,6 +5,7 @@ CREATE TABLE `Rating` (
   `votes` double DEFAULT NULL,
   `reviewer` VARCHAR(767),
   `source` VARCHAR(767),
+  `datePublished` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_index` (`uri`,`reviewer`)
 )
