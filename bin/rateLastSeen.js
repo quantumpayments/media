@@ -26,7 +26,7 @@ function bin(argv) {
   var webid  = process.argv[3] || 'http://melvincarvalho.com/#me'
   var params = {}
   params.rating = rating
-  params.reviewer = webid
+  params.webid = webid
 
   console.log(rating)
 
