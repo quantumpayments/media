@@ -284,6 +284,7 @@ function getMedia(uri, cert, mode, user, tag, path) {
                 var filePath = cacheURI.substr('file://'.length)
                 var destination =  row.ret[0][0].end + ',' + type + ',' + urlencode(cacheURI) + '.mp4'
                 var subtitles = row.ret[0][0].subtitlesURI || ''
+                subtitlesCmd = ''
                 if (/file:\/\//.test(subtitles)) {
                   subtitles = subtitles.substr(7)
                 }
