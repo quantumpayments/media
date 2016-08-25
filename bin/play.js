@@ -288,7 +288,7 @@ function getMedia(uri, cert, mode, user, tag, path) {
                   subtitles = subtitles.substr(7)
                 }
                 if (subtitles) {
-                  var subtitlesCmd = ' -vf subtitles=' + subtitles + ' '
+                  var subtitlesCmd = ' -vf subtitles=' + subtitles + ':charenc=WINDOWS-1250 '
                 }
                 console.log('copying', filePath)
 
