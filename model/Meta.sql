@@ -1,5 +1,6 @@
 CREATE TABLE `Meta` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `length` INTEGER(11) DEFAULT NULL,
+  `subtitlesURI` INTEGER(11) DEFAULT NULL,
   PRIMARY KEY (`id`)
 );
