@@ -389,6 +389,11 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
               if (user) {
                 params.webid = user
               }
+              if (safe && safe === 'off') {
+                params.safe = 0
+              } else {
+                params.safe = 1
+              }
               fn(params).then(function(row) {
                 debug('unseen', row.ret)
                 var cacheURI = row.ret[0][0].cacheURI || row.ret[0][0].uri
@@ -431,6 +436,11 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
               }
               if (user) {
                 params.webid = user
+              }
+              if (safe && safe === 'off') {
+                params.safe = 0
+              } else {
+                params.safe = 1
               }
               qpm_media.getLastFragment(params).then(function(row) {
                 debug('unseen', row.ret)
@@ -481,8 +491,8 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
           return ret
         }).then(function(ret){
           if (ret >= cost) {
-
             var bufferPath = root + '/..' + path
+            debug('bufferPath', bufferPath)
             var files = fs.readdirSync(bufferPath)
             files.sort(function(a, b) {
                return fs.statSync(bufferPath + b).mtime.getTime() -
@@ -520,6 +530,11 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
               }
               if (user) {
                 params.webid = user
+              }
+              if (safe && safe === 'off') {
+                params.safe = 0
+              } else {
+                params.safe = 1
               }
               qpm_media.getRandomUnseenFragment(params).then(function(row) {
                 debug('unseen', row.ret)
@@ -563,6 +578,11 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
               }
               if (user) {
                 params.webid = user
+              }
+              if (safe && safe === 'off') {
+                params.safe = 0
+              } else {
+                params.safe = 1
               }
               qpm_media.getLastFragment(params).then(function(row) {
                 debug('unseen', row.ret)
