@@ -5,6 +5,7 @@ CREATE TABLE `Media` (
   `cacheURI` VARCHAR(767),
   `lastSeen` DATETIME,
   `contentType` VARCHAR(100),
+  `safe` int(11) DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `constr_uri` (`uri`)
 )
