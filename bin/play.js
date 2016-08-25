@@ -31,14 +31,15 @@ function bin(argv) {
 
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
 
-  var uri     = process.argv[2] || 'https://localhost:4000/random_rate?type=getLastFragment'
-  var cert    = process.argv[3] || process.env['CERT']
-  var display = process.argv[4] || process.env['DISP'] || 'display'
-  var mode    = process.argv[5] || 'buffer'
-  var user    = process.argv[6] || 'http://melvincarvalho.com/#me'
+  var uri     = process.argv[2]  || 'https://localhost:4000/random_rate?type=getLastFragment'
+  var cert    = process.argv[3]  || process.env['CERT']
+  var display = process.argv[4]  || process.env['DISP'] || 'display'
+  var mode    = process.argv[5]  || 'buffer'
+  var user    = process.argv[6]  || 'http://melvincarvalho.com/#me'
   var tag     = process.argv[7]
   var path    = process.argv[8]
-  root        = process.argv[9] || root
+  root        = process.argv[9]  || root
+  var safe    = process.argv[10] || 'off'
 
   path = url.parse(path).path
 
@@ -50,7 +51,7 @@ function bin(argv) {
   var config = require(__dirname + '/../config/config.js')
 
 
-  getMedia(uri, cert, mode, user, tag, path).then(function(row) {
+  getMedia(uri, cert, mode, user, tag, path, safe).then(function(row) {
 
     debug('media returned')
     debug(row)
@@ -142,7 +143,7 @@ function balance(source, conn, config) {
  * @param  {string} user The WebID of the user.
  * @return {object}      Promise with the row.
  */
-function getMedia(uri, cert, mode, user, tag, path) {
+function getMedia(uri, cert, mode, user, tag, path, safe) {
 
   return new Promise(function(resolve, reject) {
 
@@ -277,6 +278,11 @@ function getMedia(uri, cert, mode, user, tag, path) {
               }
               if (user) {
                 params.webid = user
+              }
+              if (safe && safe === 'off') {
+                params.safe = 0
+              } else {
+                params.safe = 1
               }
               qpm_media.getLastFragment(params).then(function(row) {
                 debug('unseen', row.ret)
