@@ -37,12 +37,13 @@ function bin(argv) {
   var display = process.argv[4] || process.env['DISP'] || 'display'
   var mode    = process.argv[5] || 'buffer'
   var user    = process.argv[6] || 'http://melvincarvalho.com/#me'
+  var safe    = process.argv[7] || 'on'
 
   debug(argv)
 
   var config = require(__dirname + '/../config/config.js')
 
-  getMedia(uri, cert, mode, user).then(function(row) {
+  getMedia(uri, cert, mode, user, safe).then(function(row) {
 
     var uri = row.uri
     var cacheURI = row.cacheURI
@@ -111,7 +112,7 @@ function pay(credit, config, conn) {
  * @param  {string} user The WebID of the user.
  * @return {object}      Promise with the row.
  */
-function getMedia(uri, cert, mode, user) {
+function getMedia(uri, cert, mode, user, safe) {
 
   return new Promise(function(resolve, reject) {
 
@@ -174,6 +175,11 @@ function getMedia(uri, cert, mode, user) {
             }
             var params = {}
             params.reviewer = user
+            if (safe && safe === 'off') {
+              params.safe = 0
+            } else {
+              params.safe = 1
+            }
             qpm_media.getRandomUnseenImage(params).then(function(row) {
               debug('unseen', row.ret)
               var cacheURI = row.ret[0][0].cacheURI
