@@ -283,9 +283,16 @@ function getMedia(uri, cert, mode, user, tag, path) {
                 var cacheURI = row.ret[0][0].cacheURI || row.ret[0][0].uri
                 var filePath = cacheURI.substr('file://'.length)
                 var destination =  row.ret[0][0].end + ',' + type + ',' + urlencode(cacheURI) + '.mp4'
+                var subtitles = row.ret[0][0].subtitlesURI || ''
+                if (/file:\/\//.test(subtitles)) {
+                  subtitles = subtitles.substr(7)
+                }
+                if (subtitles) {
+                  var subtitlesCmd = ' -vf subtitles=' + subtitles + ' '
+                }
                 console.log('copying', filePath)
 
-                var cmd = 'ffmpeg -i "' + filePath + '" -ss '+ row.ret[0][0].end +' -movflags faststart -strict -2 -t 00:00:15 "' + bufferPath + destination + '"'
+                var cmd = 'ffmpeg -i "' + filePath + '" -ss '+ row.ret[0][0].end +' -movflags faststart -strict -2  ' + subtitlesCmd + ' -t 00:00:15 "' + bufferPath + destination + '"'
                 debug(cmd)
 
                 exec(cmd, function (err) {
