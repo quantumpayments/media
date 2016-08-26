@@ -295,7 +295,7 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
                   subtitles = subtitles.substr(7)
                 }
                 if (subtitles) {
-                  var subtitlesCmd = ' -vf subtitles=' + subtitles + ':charenc=WINDOWS-1250 '
+                  var subtitlesCmd = ' -vf subtitles="' + subtitles + '":charenc=WINDOWS-1250 '
                 }
                 console.log('copying', filePath)
 
@@ -405,7 +405,7 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
                   subtitles = subtitles.substr(7)
                 }
                 if (subtitles) {
-                  var subtitlesCmd = ' -vf subtitles=' + subtitles + ':charenc=WINDOWS-1250 '
+                  var subtitlesCmd = ' -vf subtitles="' + subtitles + '":charenc=WINDOWS-1250 '
                 }
                 console.log('copying', filePath)
 
@@ -462,7 +462,7 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
                   subtitles = subtitles.substr(7)
                 }
                 if (subtitles) {
-                  var subtitlesCmd = ' -vf subtitles=' + subtitles + ':charenc=WINDOWS-1250 '
+                  var subtitlesCmd = ' -vf subtitles="' + subtitles + '":charenc=WINDOWS-1250 '
                 }
                 console.log('copying', filePath)
 
@@ -564,7 +564,7 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
                   subtitles = subtitles.substr(7)
                 }
                 if (subtitles) {
-                  var subtitlesCmd = ' -vf subtitles=' + subtitles + ':charenc=WINDOWS-1250 '
+                  var subtitlesCmd = ' -vf subtitles="' + subtitles + '":charenc=WINDOWS-1250 '
                 }
                 console.log('copying', filePath)
 
@@ -620,7 +620,7 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
                   subtitles = subtitles.substr(7)
                 }
                 if (subtitles) {
-                  var subtitlesCmd = ' -vf subtitles=' + subtitles + ':charenc=WINDOWS-1250 '
+                  var subtitlesCmd = ' -vf subtitles="' + subtitles + '":charenc=WINDOWS-1250 '
                 }
                 console.log('copying', filePath)
 
