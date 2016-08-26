@@ -37,7 +37,7 @@ function bin(argv) {
   var mode    = process.argv[5]  || 'buffer'
   var user    = process.argv[6]  || 'http://melvincarvalho.com/#me'
   var tag     = process.argv[7]
-  var path    = process.argv[8]
+  var path    = process.argv[8]  || 'https://localhost/data/buffer/video/'
   root        = process.argv[9]  || root
   var safe    = process.argv[10] || 'off'
 
