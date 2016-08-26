@@ -39,7 +39,7 @@ function bin(argv) {
   var tag     = process.argv[7]
   var path    = process.argv[8]  || 'https://localhost/data/buffer/video/'
   root        = process.argv[9]  || root
-  var safe    = process.argv[10] || 'off'
+  var safe    = process.argv[10] || 'on'
 
   path = url.parse(path).path
 
@@ -553,6 +553,7 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
               } else {
                 params.safe = 1
               }
+              debug('play.js', params, safe)
               qpm_media.getRandomUnseenFragment(params).then(function(row) {
                 debug('unseen', row.ret)
                 var cacheURI = row.ret[0][0].cacheURI || row.ret[0][0].uri
