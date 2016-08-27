@@ -14,13 +14,8 @@ var urlencode     = require('urlencode')
 var webcredits    = require('webcredits')
 var wc_db         = require('wc_db')
 
-
 var workbot = 'https://workbot.databox.me/profile/card#me'
 var cost    = 25
-
-
-debug('requires loaded')
-
 
 /**
 * version as a command
@@ -63,7 +58,13 @@ function bin(argv) {
 
 }
 
-
+/**
+ * get a balance
+ * @param  {string} source URI of the user
+ * @param  {object} conn   connection
+ * @param  {object} config config
+ * @return {object}        promise with balance
+ */
 function balance(source, conn, config) {
 
   var config = require(__dirname + '/../config/config.js')
@@ -85,7 +86,13 @@ function balance(source, conn, config) {
 
 }
 
-
+/**
+ * make a payment
+ * @param  {object} credit The webcredit
+ * @param  {object} conn   connection
+ * @param  {object} config config
+ * @return {object}        promise with balance
+ */
 function pay(credit, config, conn) {
 
   var config = require(__dirname + '/../config/config.js')
@@ -105,173 +112,236 @@ function pay(credit, config, conn) {
 }
 
 /**
- * Get Media item
- * @param  {string} uri  The uri to get it from.
- * @param  {string} cert Location of an X.509 cert.
- * @param  {string} mode Mode api | http | buffer.
- * @param  {string} user The WebID of the user.
- * @return {object}      Promise with the row.
- */
-function getMedia(uri, cert, mode, user, safe) {
+* Get Media item from API
+* @param  {string} uri  The uri to get it from.
+* @param  {string} cert Location of an X.509 cert.
+* @param  {string} mode Mode api | http | buffer.
+* @param  {string} user The WebID of the user.
+* @param  {number} safe Whether safe search is on.
+* @return {object}      Promise with the row.
+*/
+function getMediaByAPI(uri, cert, mode, user, safe) {
 
   return new Promise(function(resolve, reject) {
 
-    if (mode === 'api') {
+    balance(user).then((ret)=>{
+      return ret
+    }).then(function(ret){
+      if (ret >= cost) {
+        qpm_media.getRandomUnseenImage().then(function(row) {
+          row.conn.close()
+          resolve(row.ret[0][0])
 
-      balance(user).then((ret)=>{
-        return ret
-      }).then(function(ret){
-        if (ret >= cost) {
-          qpm_media.getRandomUnseenImage().then(function(row) {
-            row.conn.close()
-            resolve(row.ret[0][0])
+          // pay
+          var credit = {}
+          credit['https://w3id.org/cc#source'] = user
+          credit['https://w3id.org/cc#amount'] = cost
+          credit['https://w3id.org/cc#currency'] = 'https://w3id.org/cc#bit'
+          credit['https://w3id.org/cc#destination'] = workbot
+          pay(credit)
 
-            // pay
-            var credit = {}
-            credit['https://w3id.org/cc#source'] = user
-            credit['https://w3id.org/cc#amount'] = cost
-            credit['https://w3id.org/cc#currency'] = 'https://w3id.org/cc#bit'
-            credit['https://w3id.org/cc#destination'] = workbot
-            pay(credit)
-
-
-          }).catch(function(err) {
-            row.conn.close()
-            reject(err)
-          })
-        } else {
-          reject(new Error('not enough funds'))
-        }
-      })
-
-
-    } else if (mode === 'buffer') {
-
-      balance(user).then((ret)=>{
-        return ret
-      }).then(function(ret){
-        if (ret >= cost) {
-
-          var bufferPath = __dirname + '/../data/buffer/image/'
-          var files = fs.readdirSync(bufferPath)
-          files.sort(function(a, b) {
-             return fs.statSync(bufferPath + b).mtime.getTime() -
-                    fs.statSync(bufferPath + a).mtime.getTime()
-          })
-          if (files && files[0]) {
-            var nextFile = bufferPath + files[0]
-            var ret = { 'uri' : nextFile, 'cacheURI' : urlencode.decode(files[0]) }
-            var lastFile = bufferPath + files[files.length - 1]
-            resolve(ret)
-          } else {
-            reject(new Error('nothing in buffer'))
-          }
-
-          setTimeout(() => {
-            try {
-              //fs.unlinkSync(lastFile)
-            } catch (e) {
-              console.error(e)
-            }
-            var params = {}
-            params.reviewer = user
-            if (safe && safe === 'off') {
-              params.safe = 0
-            } else {
-              params.safe = 1
-            }
-            qpm_media.getRandomUnseenImage(params).then(function(row) {
-              debug('unseen', row.ret)
-              var cacheURI = row.ret[0][0].cacheURI
-              var filePath = cacheURI.substr('file://'.length)
-              console.log('copying', filePath)
-
-              fs.copy(filePath, bufferPath + urlencode(cacheURI), function (err) {
-                if (err) {
-                  console.error(err)
-                } else {
-
-                  setTimeout(function(){
-                    exec(__dirname + '/../data/buffer/hook.sh')
-                  }, 0)
-
-
-                  console.log("success!")
-                  // pay
-                  var credit = {}
-                  credit['https://w3id.org/cc#source'] = user
-                  credit['https://w3id.org/cc#amount'] = cost
-                  credit['https://w3id.org/cc#currency'] = 'https://w3id.org/cc#bit'
-                  credit['https://w3id.org/cc#destination'] = workbot
-                  pay(credit)
-
-                  if (row && row.conn) {
-                    row.conn.close()
-                  }
-                }
-
-              })
-
-            })
-
-          }, 500)
-
-
-
-        } else {
-          reject(new Error('not enough funds'))
-        }
-      })
-
-
-
-
-    } else if (mode === 'http') {
-
-      var cookiePath = __dirname + '/../data/cookie.json'
-
-      var cookies = readCookie(cookiePath)
-
-      if (cookies) {
-        options.headers['Set-Cookie'] = 'connect.sid=' + sid + '; Path=/; HttpOnly; Secure'
+        }).catch(function(err) {
+          row.conn.close()
+          reject(err)
+        })
+      } else {
+        reject(new Error('not enough funds'))
       }
-
-
-      var options = {
-        url: uri,
-        key: fs.readFileSync(cert),
-        cert: fs.readFileSync(cert),
-        headers: { //We can define headers too
-          'Accept': 'application/json',
-        }
-      }
-
-      request.get(options, function (error, response, body) {
-
-        writeCookie(response, cookiePath)
-
-        if (!error && response.statusCode == 200) {
-
-          json = JSON.parse(body)
-          resolve(json)
-
-        } else {
-          reject(error);
-        }
-
-      })
-
-    }
+    })
 
   })
 
 }
 
+/**
+* Get Media item from HTTP
+* @param  {string} uri  The uri to get it from.
+* @param  {string} cert Location of an X.509 cert.
+* @param  {string} mode Mode api | http | buffer.
+* @param  {string} user The WebID of the user.
+* @param  {number} safe Whether safe search is on.
+* @return {object}      Promise with the row.
+*/
+function getMediaByHTTP(uri, cert, mode, user, safe) {
+
+  return new Promise(function(resolve, reject) {
+
+    var cookiePath = __dirname + '/../data/cookie.json'
+
+    var cookies = readCookie(cookiePath)
+
+    if (cookies) {
+      options.headers['Set-Cookie'] = 'connect.sid=' + sid + '; Path=/; HttpOnly; Secure'
+    }
+
+    var options = {
+      url: uri,
+      key: fs.readFileSync(cert),
+      cert: fs.readFileSync(cert),
+      headers: { //We can define headers too
+        'Accept': 'application/json',
+      }
+    }
+
+    request.get(options, function (error, response, body) {
+
+      writeCookie(response, cookiePath)
+
+      if (!error && response.statusCode == 200) {
+
+        json = JSON.parse(body)
+        resolve(json)
+
+      } else {
+        reject(error);
+      }
+
+    })
+
+  })
+
+}
 
 /**
- * Execute a command
- * @param  {string} cmd Command as a string.
+* Get Media item from buffer
+* @param  {string} uri  The uri to get it from.
+* @param  {string} cert Location of an X.509 cert.
+* @param  {string} mode Mode api | http | buffer.
+* @param  {string} user The WebID of the user.
+* @param  {number} safe Whether safe search is on.
+* @return {object}      Promise with the row.
+*/
+function getMediaByBuffer(uri, cert, mode, user, safe) {
+
+  return new Promise(function(resolve, reject) {
+
+    balance(user).then((ret)=>{
+      return ret
+    }).then(function(ret){
+      if (ret >= cost) {
+
+        var bufferPath = __dirname + '/../data/buffer/image/'
+        var files = fs.readdirSync(bufferPath)
+        files.sort(function(a, b) {
+          return fs.statSync(bufferPath + b).mtime.getTime() -
+          fs.statSync(bufferPath + a).mtime.getTime()
+        })
+        if (files && files[0]) {
+          var nextFile = bufferPath + files[0]
+          var ret = { 'uri' : nextFile, 'cacheURI' : urlencode.decode(files[0]) }
+          var lastFile = bufferPath + files[files.length - 1]
+          resolve(ret)
+        } else {
+          reject(new Error('nothing in buffer'))
+        }
+
+        setTimeout(() => {
+          try {
+            //fs.unlinkSync(lastFile)
+          } catch (e) {
+            console.error(e)
+          }
+          var params = {}
+          params.reviewer = user
+          if (safe && safe === 'off') {
+            params.safe = 0
+          } else {
+            params.safe = 1
+          }
+          qpm_media.getRandomUnseenImage(params).then(function(row) {
+            debug('unseen', row.ret)
+            var cacheURI = row.ret[0][0].cacheURI
+            var filePath = cacheURI.substr('file://'.length)
+            console.log('copying', filePath)
+
+            copyMedia(filePath, bufferPath + urlencode(cacheURI), function (err) {
+
+              if (err) {
+                debug(err)
+              } else {
+
+                setTimeout(function(){
+                  exec(__dirname + '/../data/buffer/hook.sh')
+                }, 0)
+
+                console.log("success!")
+                // pay
+                var credit = {}
+                credit['https://w3id.org/cc#source'] = user
+                credit['https://w3id.org/cc#amount'] = cost
+                credit['https://w3id.org/cc#currency'] = 'https://w3id.org/cc#bit'
+                credit['https://w3id.org/cc#destination'] = workbot
+                pay(credit)
+
+                if (row && row.conn) {
+                  row.conn.close()
+                }
+              }
+
+            })
+
+          })
+
+        }, 500)
+
+      } else {
+        reject(new Error('not enough funds'))
+      }
+    })
+
+  })
+
+}
+
+/**
+ * copy media from one place to another
+ * @param  {string}   path     from where to copy
+ * @param  {string}   to       where to copy to
+ * @param  {Function} callback callback
  */
+function copyMedia(path, to, callback) {
+  fs.copy(path, to, function (err) {
+    if (err) {
+      callback(err)
+    } else {
+      callback(null, null)
+    }
+  })
+}
+
+
+/**
+* Get Media item
+* @param  {string} uri  The uri to get it from.
+* @param  {string} cert Location of an X.509 cert.
+* @param  {string} mode Mode api | http | buffer.
+* @param  {string} user The WebID of the user.
+* @param  {number} safe Whether safe search is on.
+* @return {object}      Promise with the row.
+*/
+function getMedia(uri, cert, mode, user, safe) {
+
+  if (mode === 'api') {
+
+    return getMediaByAPI(uri, cert, mode, user, safe)
+
+  } else if (mode === 'buffer') {
+
+    return getMediaByBuffer(uri, cert, mode, user, safe)
+
+  } else if (mode === 'http') {
+
+    return getMediaByHTTP(uri, cert, mode, user, safe)
+
+  }
+
+}
+
+
+/**
+* Execute a command
+* @param  {string} cmd Command as a string.
+*/
 function exec(cmd) {
   debug('executing cmd', cmd)
   child_process.exec(cmd, function(err, stdout, stderr){
@@ -279,12 +349,11 @@ function exec(cmd) {
   })
 }
 
-
 /**
- * Reads a cookie from a file
- * @param  {string} cookiePath The path to the cookie file.
- * @return {object}            The cookie object
- */
+* Reads a cookie from a file
+* @param  {string} cookiePath The path to the cookie file.
+* @return {object}            The cookie object
+*/
 function readCookie(cookiePath) {
 
   var cookie
@@ -302,12 +371,11 @@ function readCookie(cookiePath) {
 
 }
 
-
 /**
- * Write a cookie to file.
- * @param  {object} response   The express response object.
- * @param  {string} cookiePath The path to the cookie file.
- */
+* Write a cookie to file.
+* @param  {object} response   The express response object.
+* @param  {string} cookiePath The path to the cookie file.
+*/
 function writeCookie(response, cookiePath) {
 
   try {
@@ -321,12 +389,11 @@ function writeCookie(response, cookiePath) {
 
 }
 
-
 /**
- * Update last seen time.
- * @param  {objext} params The params update.
- * @param  {object} config Optional config.
- */
+* Update last seen time.
+* @param  {objext} params The params update.
+* @param  {object} config Optional config.
+*/
 function updateLastSeen(params, config) {
 
   qpm_media.updateLastSeen(params, config).then(function(ret) {
@@ -343,7 +410,6 @@ function updateLastSeen(params, config) {
   })
 
 }
-
 
 // If one import this file, this is a module, otherwise a library
 if (require.main === module) {
