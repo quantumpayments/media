@@ -10,10 +10,12 @@ var fs            = require('fs-extra')
 var program       = require('commander')
 var qpm_media     = require('../lib/qpm_media')
 var request       = require('request')
+var url           = require('url')
 var urlencode     = require('urlencode')
 var webcredits    = require('webcredits')
 var wc_db         = require('wc_db')
 
+// globals
 var workbot = 'https://workbot.databox.me/profile/card#me'
 var cost    = 25
 
@@ -27,14 +29,27 @@ function bin(argv) {
   // setup config
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
 
-  var uri     = process.argv[2] || 'https://localhost:3000/random_rate'
-  var cert    = process.argv[3] || process.env['CERT']
-  var display = process.argv[4] || process.env['DISP'] || 'display'
-  var mode    = process.argv[5] || 'buffer'
-  var user    = process.argv[6] || 'http://melvincarvalho.com/#me'
-  var safe    = process.argv[7] || 'on'
+  var uri     = process.argv[2]  || 'https://localhost:3000/random_rate'
+  var cert    = process.argv[3]  || process.env['CERT']
+  var display = process.argv[4]  || process.env['DISP'] || 'display'
+  var mode    = process.argv[5]  || 'buffer'
+  var user    = process.argv[6]  || 'http://melvincarvalho.com/#me'
+  var tag     = process.argv[7]
+  var path    = process.argv[8]  || 'https://localhost/data/buffer/video/'
+  root        = process.argv[9]  || root
+  var safe    = process.argv[10] || 'on'
 
   debug(argv)
+
+  if (url) {
+    path = url.parse(path).path
+  }
+
+  console.log(process.argv)
+  console.log('tag', tag)
+  console.log('path', path)
+  console.log('webid', user)
+
 
   var config = require(__dirname + '/../config/config.js')
 
@@ -235,54 +250,7 @@ function getMediaByBuffer(uri, cert, mode, user, safe) {
           reject(new Error('nothing in buffer'))
         }
 
-        setTimeout(() => {
-          try {
-            //fs.unlinkSync(lastFile)
-          } catch (e) {
-            console.error(e)
-          }
-          var params = {}
-          params.reviewer = user
-          if (safe && safe === 'off') {
-            params.safe = 0
-          } else {
-            params.safe = 1
-          }
-          qpm_media.getRandomUnseenImage(params).then(function(row) {
-            debug('unseen', row.ret)
-            var cacheURI = row.ret[0][0].cacheURI
-            var filePath = cacheURI.substr('file://'.length)
-            console.log('copying', filePath)
-
-            copyMedia(filePath, bufferPath + urlencode(cacheURI), function (err) {
-
-              if (err) {
-                debug(err)
-              } else {
-
-                setTimeout(function(){
-                  exec(__dirname + '/../data/buffer/hook.sh')
-                }, 0)
-
-                console.log("success!")
-                // pay
-                var credit = {}
-                credit['https://w3id.org/cc#source'] = user
-                credit['https://w3id.org/cc#amount'] = cost
-                credit['https://w3id.org/cc#currency'] = 'https://w3id.org/cc#bit'
-                credit['https://w3id.org/cc#destination'] = workbot
-                pay(credit)
-
-                if (row && row.conn) {
-                  row.conn.close()
-                }
-              }
-
-            })
-
-          })
-
-        }, 500)
+        addMediaToBuffer(uri, cert, mode, user, safe, bufferPath)
 
       } else {
         reject(new Error('not enough funds'))
@@ -290,6 +258,69 @@ function getMediaByBuffer(uri, cert, mode, user, safe) {
     })
 
   })
+
+}
+
+/**
+* Adds media to buffer
+* @param  {string} uri        The uri to get it from.
+* @param  {string} cert       Location of an X.509 cert.
+* @param  {string} mode       Mode api | http | buffer.
+* @param  {string} user       The WebID of the user.
+* @param  {number} safe       Whether safe search is on.
+* @param  {string} bufferPath The path of the buffer.
+* @return {object}            Promise with the row.
+*/
+function addMediaToBuffer(uri, cert, mode, user, safe, bufferPath) {
+
+  setTimeout(() => {
+    try {
+      //fs.unlinkSync(lastFile)
+    } catch (e) {
+      console.error(e)
+    }
+    var params = {}
+    params.reviewer = user
+    if (safe && safe === 'off') {
+      params.safe = 0
+    } else {
+      params.safe = 1
+    }
+    qpm_media.getRandomUnseenImage(params).then(function(row) {
+      debug('unseen', row.ret)
+      var cacheURI = row.ret[0][0].cacheURI
+      var filePath = cacheURI.substr('file://'.length)
+      console.log('copying', filePath)
+
+      copyMedia(filePath, bufferPath + urlencode(cacheURI), function (err) {
+
+        if (err) {
+          debug(err)
+        } else {
+
+          setTimeout(function(){
+            exec(__dirname + '/../data/buffer/hook.sh')
+          }, 0)
+
+          console.log("success!")
+          // pay
+          var credit = {}
+          credit['https://w3id.org/cc#source'] = user
+          credit['https://w3id.org/cc#amount'] = cost
+          credit['https://w3id.org/cc#currency'] = 'https://w3id.org/cc#bit'
+          credit['https://w3id.org/cc#destination'] = workbot
+          pay(credit)
+
+          if (row && row.conn) {
+            row.conn.close()
+          }
+        }
+
+      })
+
+    })
+
+  }, 500)
 
 }
 
