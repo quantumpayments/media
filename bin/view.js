@@ -169,7 +169,7 @@ function getMedia(uri, cert, mode, user, safe) {
 
           setTimeout(() => {
             try {
-              fs.unlinkSync(lastFile)
+              //fs.unlinkSync(lastFile)
             } catch (e) {
               console.error(e)
             }

@@ -39,7 +39,7 @@ function bin(argv) {
   var tag     = process.argv[7]
   var path    = process.argv[8]  || 'https://localhost/data/buffer/video/'
   root        = process.argv[9]  || root
-  var safe    = process.argv[10] || 'on'
+  var safe    = process.argv[10] || 'off'
 
   path = url.parse(path).path
 
@@ -295,7 +295,12 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
                   subtitles = subtitles.substr(7)
                 }
                 if (subtitles) {
-                  var subtitlesCmd = ' -vf subtitles="' + subtitles + '":charenc=WINDOWS-1250 '
+                  var charenc = row.ret[0][0].charenc
+                  var subtitlesCmd = ' -vf subtitles="' + subtitles + '"'
+                  if (charenc) {
+                    subtitlesCmd += ':charenc=' + charenc + ' '
+                  }
+
                 }
                 console.log('copying', filePath)
 
@@ -405,7 +410,14 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
                   subtitles = subtitles.substr(7)
                 }
                 if (subtitles) {
-                  var subtitlesCmd = ' -vf subtitles="' + subtitles + '":charenc=WINDOWS-1250 '
+                  if (subtitles) {
+                    var charenc = row.ret[0][0].charenc
+                    var subtitlesCmd = ' -vf subtitles="' + subtitles + '"'
+                    if (charenc) {
+                      subtitlesCmd += ':charenc=' + charenc + ' '
+                    }
+
+                  }
                 }
                 console.log('copying', filePath)
 
@@ -462,7 +474,14 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
                   subtitles = subtitles.substr(7)
                 }
                 if (subtitles) {
-                  var subtitlesCmd = ' -vf subtitles="' + subtitles + '":charenc=WINDOWS-1250 '
+                  if (subtitles) {
+                    var charenc = row.ret[0][0].charenc
+                    var subtitlesCmd = ' -vf subtitles="' + subtitles + '"'
+                    if (charenc) {
+                      subtitlesCmd += ':charenc=' + charenc + ' '
+                    }
+
+                  }
                 }
                 console.log('copying', filePath)
 
@@ -553,7 +572,7 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
               } else {
                 params.safe = 1
               }
-              debug('play.js', params, safe)
+              debug('play.js', )
               qpm_media.getRandomUnseenFragment(params).then(function(row) {
                 debug('unseen', row.ret)
                 var cacheURI = row.ret[0][0].cacheURI || row.ret[0][0].uri
@@ -565,7 +584,14 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
                   subtitles = subtitles.substr(7)
                 }
                 if (subtitles) {
-                  var subtitlesCmd = ' -vf subtitles="' + subtitles + '":charenc=WINDOWS-1250 '
+                  if (subtitles) {
+                    var charenc = row.ret[0][0].charenc
+                    var subtitlesCmd = ' -vf subtitles="' + subtitles + '"'
+                    if (charenc) {
+                      subtitlesCmd += ':charenc=' + charenc + ' '
+                    }
+
+                  }
                 }
                 console.log('copying', filePath)
 
@@ -621,7 +647,14 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
                   subtitles = subtitles.substr(7)
                 }
                 if (subtitles) {
-                  var subtitlesCmd = ' -vf subtitles="' + subtitles + '":charenc=WINDOWS-1250 '
+                  if (subtitles) {
+                    var charenc = row.ret[0][0].charenc
+                    var subtitlesCmd = ' -vf subtitles="' + subtitles + '"'
+                    if (charenc) {
+                      subtitlesCmd += ':charenc=' + charenc + ' '
+                    }
+
+                  }
                 }
                 console.log('copying', filePath)
 

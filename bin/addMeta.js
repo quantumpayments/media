@@ -24,6 +24,7 @@ function bin(argv) {
   var mediaURI     = process.argv[2]
   var length       = process.argv[3]
   var subtitlesURI = process.argv[4]
+  var charenc      = process.argv[5]
 
   if (!mediaURI) {
     console.error('Please supply a media URI')
@@ -33,6 +34,7 @@ function bin(argv) {
   params.uri           = mediaURI
   params.length        = length
   params.subtitlesURI  = subtitlesURI
+  params.charenc       = charenc
 
   qpm_media.addMeta(params).then(function(ret) {
     if (ret.conn) {
