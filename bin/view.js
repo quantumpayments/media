@@ -16,8 +16,9 @@ var webcredits    = require('webcredits')
 var wc_db         = require('wc_db')
 
 // globals
-var workbot = 'https://workbot.databox.me/profile/card#me'
 var cost    = 25
+var root    = __dirname
+var workbot = 'https://workbot.databox.me/profile/card#me'
 
 /**
 * version as a command
@@ -29,31 +30,26 @@ function bin(argv) {
   // setup config
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
 
-  var uri     = process.argv[2]  || 'https://localhost:3000/random_rate'
-  var cert    = process.argv[3]  || process.env['CERT']
-  var display = process.argv[4]  || process.env['DISP'] || 'display'
-  var mode    = process.argv[5]  || 'buffer'
-  var user    = process.argv[6]  || 'http://melvincarvalho.com/#me'
-  var tag     = process.argv[7]
-  var path    = process.argv[8]  || 'https://localhost/data/buffer/video/'
-  root        = process.argv[9]  || root
-  var safe    = process.argv[10] || 'on'
+  var uri       = process.argv[2]  || 'https://localhost:3000/random_rate'
+  var cert      = process.argv[3]  || process.env['CERT']
+  var display   = process.argv[4]  || process.env['DISP'] || 'display'
+  var mode      = process.argv[5]  || 'buffer'
+  var user      = process.argv[6]  || 'http://melvincarvalho.com/#me'
+  var tag       = process.argv[7]
+  var bufferURI = process.argv[8]  || 'https://localhost/data/buffer/video/'
+  root          = process.argv[9]  || root
+  var safe      = process.argv[10] || 'on'
 
   debug(argv)
 
-  if (url) {
-    path = url.parse(path).path
-  }
-
   console.log(process.argv)
   console.log('tag', tag)
-  console.log('path', path)
+  console.log('bufferURI', bufferURI)
   console.log('webid', user)
-
 
   var config = require(__dirname + '/../config/config.js')
 
-  getMedia(uri, cert, mode, user, safe).then(function(row) {
+  getMedia(uri, cert, mode, user, safe, bufferURI).then(function(row) {
 
     var uri = row.uri
     var cacheURI = row.cacheURI
@@ -74,68 +70,182 @@ function bin(argv) {
 }
 
 /**
- * get a balance
- * @param  {string} source URI of the user
- * @param  {object} conn   connection
- * @param  {object} config config
- * @return {object}        promise with balance
- */
-function balance(source, conn, config) {
+* Get Media item
+* @param  {string} uri       The uri to get it from.
+* @param  {string} cert      Location of an X.509 cert.
+* @param  {string} mode      Mode api | http | buffer.
+* @param  {string} user      The WebID of the user.
+* @param  {number} safe      Whether safe search is on.
+* @param  {string} bufferURI The URI of the buffer.
+* @return {object}           Promise with the row.
+*/
+function getMedia(uri, cert, mode, user, safe, bufferURI) {
 
-  var config = require(__dirname + '/../config/config.js')
-  debug('balance', config)
-  var conn = wc_db.getConnection(config.db)
+  if (mode === 'api') {
+
+    return getMediaByAPI(uri, cert, mode, user, safe, bufferURI)
+
+  } else if (mode === 'buffer') {
+
+    return getMediaByBuffer(uri, cert, mode, user, safe, bufferURI)
+
+  } else if (mode === 'http') {
+
+    return getMediaByHTTP(uri, cert, mode, user, safe, bufferURI)
+
+  }
+
+}
+
+/**
+* Get Media item from buffer
+* @param  {string} uri       The uri to get it from.
+* @param  {string} cert      Location of an X.509 cert.
+* @param  {string} mode      Mode api | http | buffer.
+* @param  {string} user      The WebID of the user.
+* @param  {number} safe      Whether safe search is on.
+* @param  {string} bufferURI The URI of the buffer.
+* @return {object}           Promise with the row.
+*/
+function getMediaByBuffer(uri, cert, mode, user, safe, bufferURI) {
+
+  var bufferPath = root
+  if (bufferURI) {
+    bufferPath += '/../' + url.parse(bufferURI).path
+  }
 
   return new Promise(function(resolve, reject) {
-    webcredits.getBalance(source, conn, config, function(err,ret) {
-      debug('balance', 'entered')
-      if (err) {
-        debug('err', err)
-        reject(err)
+
+    balance(user).then((ret)=>{
+      return ret
+    }).then(function(ret){
+      if (ret >= cost) {
+
+        //var bufferPath = __dirname + '/../data/buffer/image/'
+        debug('bufferPath', bufferPath)
+        var files = fs.readdirSync(bufferPath)
+        files.sort(function(a, b) {
+          return fs.statSync(bufferPath + b).mtime.getTime() -
+          fs.statSync(bufferPath + a).mtime.getTime()
+        })
+        if (files && files[0]) {
+          var nextFile = bufferPath + files[0]
+          var ret = { 'uri' : nextFile, 'cacheURI' : urlencode.decode(files[0]) }
+          var lastFile = bufferPath + files[files.length - 1]
+          resolve(ret)
+        } else {
+          reject(new Error('nothing in buffer'))
+        }
+
+        addMediaToBuffer(uri, cert, mode, user, safe, bufferURI)
+
       } else {
-        debug('balance', ret)
-        resolve(ret)
+        reject(new Error('not enough funds'))
       }
     })
+
   })
 
 }
 
 /**
- * make a payment
- * @param  {object} credit The webcredit
- * @param  {object} conn   connection
- * @param  {object} config config
- * @return {object}        promise with balance
- */
-function pay(credit, config, conn) {
+* Adds media to buffer
+* @param  {string} uri       The uri to get it from.
+* @param  {string} cert      Location of an X.509 cert.
+* @param  {string} mode      Mode api | http | buffer.
+* @param  {string} user      The WebID of the user.
+* @param  {number} safe      Whether safe search is on.
+* @param  {string} bufferURI The URI of the buffer.
+* @return {object}           Promise with the row.
+*/
+function addMediaToBuffer(uri, cert, mode, user, safe, bufferURI) {
 
-  var config = require(__dirname + '/../config/config.js')
-  debug('pay', config)
-  var conn = wc_db.getConnection(config.db)
+  var bufferPath = root
+  if (bufferURI) {
+    bufferPath += '/../' + url.parse(bufferURI).path
+  }
 
-  return new Promise(function(resolve, reject) {
-    webcredits.insert(credit, conn, config, function(err,ret) {
-      if (err) {
-        debug('pay', err)
-      } else {
-        debug('pay', ret.ret)
-      }
+  setTimeout(() => {
+    try {
+      //fs.unlinkSync(lastFile)
+    } catch (e) {
+      console.error(e)
+    }
+    var params = {}
+    params.reviewer = user
+    if (safe && safe === 'off') {
+      params.safe = 0
+    } else {
+      params.safe = 1
+    }
+    qpm_media.getRandomUnseenImage(params).then(function(row) {
+      debug('unseen', row.ret)
+      var cacheURI = row.ret[0][0].cacheURI
+      var filePath = cacheURI.substr('file://'.length)
+      console.log('copying', filePath)
+
+      copyMedia(filePath, bufferPath + urlencode(cacheURI), function (err) {
+
+        if (err) {
+          debug(err)
+        } else {
+
+          console.log("success!")
+          // pay
+          var credit = {}
+          credit['https://w3id.org/cc#source'] = user
+          credit['https://w3id.org/cc#amount'] = cost
+          credit['https://w3id.org/cc#currency'] = 'https://w3id.org/cc#bit'
+          credit['https://w3id.org/cc#destination'] = workbot
+          pay(credit)
+
+          if (row && row.conn) {
+            row.conn.close()
+          }
+        }
+
+      })
+
     })
+
+  }, 500)
+
+}
+
+/**
+ * copy media from one place to another
+ * @param  {string}   path     from where to copy
+ * @param  {string}   to       where to copy to
+ * @param  {Function} callback callback
+ */
+function copyMedia(path, to, callback) {
+
+  var hookPath = __dirname + '/../data/buffer/hook.sh'
+
+  fs.copy(path, to, function (err) {
+    if (err) {
+      callback(err)
+    } else {
+      callback(null, null)
+      setTimeout(function(){
+        exec(hookPath)
+      }, 0)
+    }
   })
 
 }
 
 /**
 * Get Media item from API
-* @param  {string} uri  The uri to get it from.
-* @param  {string} cert Location of an X.509 cert.
-* @param  {string} mode Mode api | http | buffer.
-* @param  {string} user The WebID of the user.
-* @param  {number} safe Whether safe search is on.
-* @return {object}      Promise with the row.
+* @param  {string} uri       The uri to get it from.
+* @param  {string} cert      Location of an X.509 cert.
+* @param  {string} mode      Mode api | http | buffer.
+* @param  {string} user      The WebID of the user.
+* @param  {number} safe      Whether safe search is on.
+* @param  {string} bufferURI The URI of the buffer.
+* @return {object}           Promise with the row.
 */
-function getMediaByAPI(uri, cert, mode, user, safe) {
+function getMediaByAPI(uri, cert, mode, user, safe, bufferURI) {
 
   return new Promise(function(resolve, reject) {
 
@@ -170,14 +280,15 @@ function getMediaByAPI(uri, cert, mode, user, safe) {
 
 /**
 * Get Media item from HTTP
-* @param  {string} uri  The uri to get it from.
-* @param  {string} cert Location of an X.509 cert.
-* @param  {string} mode Mode api | http | buffer.
-* @param  {string} user The WebID of the user.
-* @param  {number} safe Whether safe search is on.
-* @return {object}      Promise with the row.
+* @param  {string} uri       The uri to get it from.
+* @param  {string} cert      Location of an X.509 cert.
+* @param  {string} mode      Mode api | http | buffer.
+* @param  {string} user      The WebID of the user.
+* @param  {number} safe      Whether safe search is on.
+* @param  {string} bufferURI The URI of the buffer.
+* @return {object}           Promise with the row.
 */
-function getMediaByHTTP(uri, cert, mode, user, safe) {
+function getMediaByHTTP(uri, cert, mode, user, safe, bufferURI) {
 
   return new Promise(function(resolve, reject) {
 
@@ -217,156 +328,6 @@ function getMediaByHTTP(uri, cert, mode, user, safe) {
 
 }
 
-/**
-* Get Media item from buffer
-* @param  {string} uri  The uri to get it from.
-* @param  {string} cert Location of an X.509 cert.
-* @param  {string} mode Mode api | http | buffer.
-* @param  {string} user The WebID of the user.
-* @param  {number} safe Whether safe search is on.
-* @return {object}      Promise with the row.
-*/
-function getMediaByBuffer(uri, cert, mode, user, safe) {
-
-  return new Promise(function(resolve, reject) {
-
-    balance(user).then((ret)=>{
-      return ret
-    }).then(function(ret){
-      if (ret >= cost) {
-
-        var bufferPath = __dirname + '/../data/buffer/image/'
-        var files = fs.readdirSync(bufferPath)
-        files.sort(function(a, b) {
-          return fs.statSync(bufferPath + b).mtime.getTime() -
-          fs.statSync(bufferPath + a).mtime.getTime()
-        })
-        if (files && files[0]) {
-          var nextFile = bufferPath + files[0]
-          var ret = { 'uri' : nextFile, 'cacheURI' : urlencode.decode(files[0]) }
-          var lastFile = bufferPath + files[files.length - 1]
-          resolve(ret)
-        } else {
-          reject(new Error('nothing in buffer'))
-        }
-
-        addMediaToBuffer(uri, cert, mode, user, safe, bufferPath)
-
-      } else {
-        reject(new Error('not enough funds'))
-      }
-    })
-
-  })
-
-}
-
-/**
-* Adds media to buffer
-* @param  {string} uri        The uri to get it from.
-* @param  {string} cert       Location of an X.509 cert.
-* @param  {string} mode       Mode api | http | buffer.
-* @param  {string} user       The WebID of the user.
-* @param  {number} safe       Whether safe search is on.
-* @param  {string} bufferPath The path of the buffer.
-* @return {object}            Promise with the row.
-*/
-function addMediaToBuffer(uri, cert, mode, user, safe, bufferPath) {
-
-  setTimeout(() => {
-    try {
-      //fs.unlinkSync(lastFile)
-    } catch (e) {
-      console.error(e)
-    }
-    var params = {}
-    params.reviewer = user
-    if (safe && safe === 'off') {
-      params.safe = 0
-    } else {
-      params.safe = 1
-    }
-    qpm_media.getRandomUnseenImage(params).then(function(row) {
-      debug('unseen', row.ret)
-      var cacheURI = row.ret[0][0].cacheURI
-      var filePath = cacheURI.substr('file://'.length)
-      console.log('copying', filePath)
-
-      copyMedia(filePath, bufferPath + urlencode(cacheURI), function (err) {
-
-        if (err) {
-          debug(err)
-        } else {
-
-          setTimeout(function(){
-            exec(__dirname + '/../data/buffer/hook.sh')
-          }, 0)
-
-          console.log("success!")
-          // pay
-          var credit = {}
-          credit['https://w3id.org/cc#source'] = user
-          credit['https://w3id.org/cc#amount'] = cost
-          credit['https://w3id.org/cc#currency'] = 'https://w3id.org/cc#bit'
-          credit['https://w3id.org/cc#destination'] = workbot
-          pay(credit)
-
-          if (row && row.conn) {
-            row.conn.close()
-          }
-        }
-
-      })
-
-    })
-
-  }, 500)
-
-}
-
-/**
- * copy media from one place to another
- * @param  {string}   path     from where to copy
- * @param  {string}   to       where to copy to
- * @param  {Function} callback callback
- */
-function copyMedia(path, to, callback) {
-  fs.copy(path, to, function (err) {
-    if (err) {
-      callback(err)
-    } else {
-      callback(null, null)
-    }
-  })
-}
-
-
-/**
-* Get Media item
-* @param  {string} uri  The uri to get it from.
-* @param  {string} cert Location of an X.509 cert.
-* @param  {string} mode Mode api | http | buffer.
-* @param  {string} user The WebID of the user.
-* @param  {number} safe Whether safe search is on.
-* @return {object}      Promise with the row.
-*/
-function getMedia(uri, cert, mode, user, safe) {
-
-  if (mode === 'api') {
-
-    return getMediaByAPI(uri, cert, mode, user, safe)
-
-  } else if (mode === 'buffer') {
-
-    return getMediaByBuffer(uri, cert, mode, user, safe)
-
-  } else if (mode === 'http') {
-
-    return getMediaByHTTP(uri, cert, mode, user, safe)
-
-  }
-
-}
 
 
 /**
@@ -438,6 +399,59 @@ function updateLastSeen(params, config) {
       conn.close()
     }
     console.error(err.err)
+  })
+
+}
+
+/**
+ * get a balance
+ * @param  {string} source URI of the user
+ * @param  {object} conn   connection
+ * @param  {object} config config
+ * @return {object}        promise with balance
+ */
+function balance(source, conn, config) {
+
+  var config = require(__dirname + '/../config/config.js')
+  debug('balance', config)
+  var conn = wc_db.getConnection(config.db)
+
+  return new Promise(function(resolve, reject) {
+    webcredits.getBalance(source, conn, config, function(err,ret) {
+      debug('balance', 'entered')
+      if (err) {
+        debug('err', err)
+        reject(err)
+      } else {
+        debug('balance', ret)
+        resolve(ret)
+      }
+    })
+  })
+
+}
+
+/**
+ * make a payment
+ * @param  {object} credit The webcredit
+ * @param  {object} conn   connection
+ * @param  {object} config config
+ * @return {object}        promise with balance
+ */
+function pay(credit, config, conn) {
+
+  var config = require(__dirname + '/../config/config.js')
+  debug('pay', config)
+  var conn = wc_db.getConnection(config.db)
+
+  return new Promise(function(resolve, reject) {
+    webcredits.insert(credit, conn, config, function(err,ret) {
+      if (err) {
+        debug('pay', err)
+      } else {
+        debug('pay', ret.ret)
+      }
+    })
   })
 
 }
