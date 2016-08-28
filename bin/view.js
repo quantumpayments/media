@@ -128,9 +128,12 @@ function getMediaByBuffer(uri, cert, mode, user, safe, bufferURI) {
           return fs.statSync(bufferPath + b).mtime.getTime() -
           fs.statSync(bufferPath + a).mtime.getTime()
         })
-        if (files && files[0]) {
-          var nextFile = bufferPath + files[0]
-          var ret = { 'uri' : nextFile, 'cacheURI' : urlencode.decode(files[0]) }
+
+        var file = getNextFile(files)
+        debug('nextFile', file)
+        if (file) {
+          var nextFile = bufferPath + file
+          var ret = { 'uri' : nextFile, 'cacheURI' : urlencode.decode(file) }
           var lastFile = bufferPath + files[files.length - 1]
           resolve(ret)
         } else {
@@ -376,8 +379,6 @@ function getMediaByHTTP(uri, cert, mode, user, safe, bufferURI) {
 
 }
 
-
-
 /**
 * Execute a command
 * @param  {string} cmd Command as a string.
@@ -501,6 +502,24 @@ function pay(credit, config, conn) {
       }
     })
   })
+
+}
+
+/**
+ * Gets the next file in a buffer
+ * @param  {array}  files Array of files
+ * @param  {number} type  Type of file to get
+ * @return {string}       Path to file
+ */
+function getNextFile(files, type) {
+
+  for (var i = 0; i < files.length; i++) {
+    var file = files[i]
+    if (/.ttl$/.test(file)) {
+      continue
+    }
+    return file
+  }
 
 }
 
