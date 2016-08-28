@@ -28,7 +28,6 @@ var root    = __dirname
 function bin(argv) {
   // setup config
 
-
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
 
   var uri     = process.argv[2]  || 'https://localhost:4000/random_rate?type=getLastFragment'
@@ -41,7 +40,9 @@ function bin(argv) {
   root        = process.argv[9]  || root
   var safe    = process.argv[10] || 'on'
 
-  path = url.parse(path).path
+  if (url) {    
+    path = url.parse(path).path
+  }
 
   console.log(process.argv)
   console.log('tag', tag)
@@ -49,7 +50,6 @@ function bin(argv) {
   console.log('webid', user)
 
   var config = require(__dirname + '/../config/config.js')
-
 
   getMedia(uri, cert, mode, user, tag, path, safe).then(function(row) {
 

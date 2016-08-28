@@ -184,7 +184,8 @@ function addMediaToBuffer(uri, cert, mode, user, safe, bufferURI) {
       var filePath = cacheURI.substr('file://'.length)
       console.log('copying', filePath)
 
-      copyMedia(filePath, bufferPath + urlencode(cacheURI), function (err) {
+      //copyMedia(filePath, bufferPath + urlencode(cacheURI), function (err) {
+      copyMedia(filePath, bufferURI + urlencode(cacheURI), cert, function (err) {
 
         if (err) {
           debug(err)
@@ -216,22 +217,69 @@ function addMediaToBuffer(uri, cert, mode, user, safe, bufferURI) {
  * copy media from one place to another
  * @param  {string}   path     from where to copy
  * @param  {string}   to       where to copy to
+ * @param  {string}   cert     path to certificate
  * @param  {Function} callback callback
  */
-function copyMedia(path, to, callback) {
+function copyMedia(path, to, cert, callback) {
 
   var hookPath = __dirname + '/../data/buffer/hook.sh'
+  debug('copyMedia', path, to, cert)
 
-  fs.copy(path, to, function (err) {
-    if (err) {
-      callback(err)
-    } else {
-      callback(null, null)
-      setTimeout(function(){
-        exec(hookPath)
-      }, 0)
+  if (/^http/.test(to)) {
+    debug('using http')
+    var parsed = url.parse(to)
+    debug('parsed', parsed)
+
+    var domain = url.parse(to).domain
+    var file   = url.parse(to).path
+    debug(domain, file)
+
+    var a   = parsed.pathname.split('/')
+    var uri = parsed.protocol + '//' + parsed.host
+    for (var i = 0; i < a.length-1; i++) {
+      uri += a[i] + '/'
     }
-  })
+    uri +=   urlencode(a[i])
+    debug('uri', uri)
+
+    //uri = 'https://phone.servehttp.com:8000/data/buffer/image/'  + urlencode('file%3A%2F%2F%2Fmedia%2Fmelvin%2FElements%2Fpichunter.com%2F2443342_15_o.jpg')
+
+    var options = {
+      method  : 'PUT',
+      url     : uri,
+      key     : fs.readFileSync(cert),
+      cert    : fs.readFileSync(cert),
+      headers : { //We can define headers too
+        "Content-Type" : "image/jpg"
+      }
+    }
+
+    debug(options)
+    fs.createReadStream(path).pipe(request.put(options, function (err, response, body) {
+      if (err) {
+        debug(err)
+      } else {
+        debug('success')
+        setTimeout(function(){
+          exec(hookPath)
+        }, 0)
+      }
+    }))
+
+  } else {
+
+    fs.copy(path, to, function (err) {
+      if (err) {
+        callback(err)
+      } else {
+        callback(null, null)
+        setTimeout(function(){
+          exec(hookPath)
+        }, 0)
+      }
+    })
+
+  }
 
 }
 
