@@ -16,9 +16,16 @@ var webcredits    = require('webcredits')
 var wc_db         = require('wc_db')
 
 // globals
-var cost    = 25
 var root    = __dirname
 var workbot = 'https://workbot.databox.me/profile/card#me'
+
+var algos   = {
+  "getRandomUnseenImage" : {
+    "cost"      : 25,
+    "function"  : qpm_media.getRandomUnseenImage,
+    "shortcode" : "random_rate"
+  }
+}
 
 /**
 * version as a command
@@ -119,7 +126,7 @@ function getMediaByBuffer(uri, cert, mode, user, safe, bufferURI) {
     balance(user).then((ret)=>{
       return ret
     }).then(function(ret){
-      if (ret >= cost) {
+      if ( ret >= algos.getRandomUnseenImage.cost ) {
 
         //var bufferPath = __dirname + '/../data/buffer/image/'
         debug('bufferPath', bufferPath)
@@ -181,7 +188,7 @@ function addMediaToBuffer(uri, cert, mode, user, safe, bufferURI) {
     } else {
       params.safe = 1
     }
-    qpm_media.getRandomUnseenImage(params).then(function(row) {
+    algos.getRandomUnseenImage.function(params).then(function(row) {
       debug('unseen', row.ret)
       var cacheURI = row.ret[0][0].cacheURI
       var filePath = cacheURI.substr('file://'.length)
@@ -198,7 +205,7 @@ function addMediaToBuffer(uri, cert, mode, user, safe, bufferURI) {
           // pay
           var credit = {}
           credit['https://w3id.org/cc#source'] = user
-          credit['https://w3id.org/cc#amount'] = cost
+          credit['https://w3id.org/cc#amount'] = algos.getRandomUnseenImage.cost
           credit['https://w3id.org/cc#currency'] = 'https://w3id.org/cc#bit'
           credit['https://w3id.org/cc#destination'] = workbot
           pay(credit)
@@ -303,7 +310,7 @@ function getMediaByAPI(uri, cert, mode, user, safe, bufferURI) {
     balance(user).then((ret)=>{
       return ret
     }).then(function(ret){
-      if (ret >= cost) {
+      if ( ret >= algos.getRandomUnseenImage.cost ) {
         qpm_media.getRandomUnseenImage().then(function(row) {
           row.conn.close()
           resolve(row.ret[0][0])
@@ -311,7 +318,7 @@ function getMediaByAPI(uri, cert, mode, user, safe, bufferURI) {
           // pay
           var credit = {}
           credit['https://w3id.org/cc#source'] = user
-          credit['https://w3id.org/cc#amount'] = cost
+          credit['https://w3id.org/cc#amount'] = algos.getRandomUnseenImage.cost
           credit['https://w3id.org/cc#currency'] = 'https://w3id.org/cc#bit'
           credit['https://w3id.org/cc#destination'] = workbot
           pay(credit)
