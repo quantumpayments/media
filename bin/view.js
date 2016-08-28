@@ -17,13 +17,13 @@ var wc_db         = require('wc_db')
 
 // globals
 var root    = __dirname
-var workbot = 'https://workbot.databox.me/profile/card#me'
 
 var algos   = {
   "getRandomUnseenImage" : {
-    "cost"      : 25,
-    "function"  : qpm_media.getRandomUnseenImage,
-    "shortcode" : "random_rate"
+    "cost"         : 25,
+    "function"     : qpm_media.getRandomUnseenImage,
+    "shortcode"    : "random_rate",
+    "counterparty" : 'https://workbot.databox.me/profile/card#me'
   }
 }
 
@@ -192,7 +192,7 @@ function addMediaToBuffer(uri, cert, mode, user, safe, bufferURI) {
       debug('unseen', row.ret)
       var cacheURI = row.ret[0][0].cacheURI
       var filePath = cacheURI.substr('file://'.length)
-      console.log('copying', filePath)
+      debug('copying', filePath)
 
       //copyMedia(filePath, bufferPath + urlencode(cacheURI), function (err) {
       copyMedia(filePath, bufferURI + urlencode(cacheURI), cert, function (err) {
@@ -207,7 +207,8 @@ function addMediaToBuffer(uri, cert, mode, user, safe, bufferURI) {
           credit['https://w3id.org/cc#source'] = user
           credit['https://w3id.org/cc#amount'] = algos.getRandomUnseenImage.cost
           credit['https://w3id.org/cc#currency'] = 'https://w3id.org/cc#bit'
-          credit['https://w3id.org/cc#destination'] = workbot
+          credit['https://w3id.org/cc#destination'] = algos.getRandomUnseenImage.counterparty
+          debug(credit)
           pay(credit)
 
           if (row && row.conn) {
@@ -268,8 +269,10 @@ function copyMedia(path, to, cert, callback) {
     fs.createReadStream(path).pipe(request.put(options, function (err, response, body) {
       if (err) {
         debug(err)
+        callback(err)
       } else {
         debug('success')
+        callback(null)
         setTimeout(function(){
           exec(hookPath)
         }, 0)
@@ -320,7 +323,7 @@ function getMediaByAPI(uri, cert, mode, user, safe, bufferURI) {
           credit['https://w3id.org/cc#source'] = user
           credit['https://w3id.org/cc#amount'] = algos.getRandomUnseenImage.cost
           credit['https://w3id.org/cc#currency'] = 'https://w3id.org/cc#bit'
-          credit['https://w3id.org/cc#destination'] = workbot
+          credit['https://w3id.org/cc#destination'] = algos.getRandomUnseenImage.counterparty
           pay(credit)
 
         }).catch(function(err) {
