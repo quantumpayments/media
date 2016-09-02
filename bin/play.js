@@ -40,7 +40,7 @@ function bin(argv) {
   root        = process.argv[9]  || root
   var safe    = process.argv[10] || 'on'
 
-  if (url) {    
+  if (url) {
     path = url.parse(path).path
   }
 
@@ -595,7 +595,7 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
                 }
                 console.log('copying', filePath)
 
-                var cmd = 'ffmpeg -i "' + filePath + '" -ss '+ 0 +' -movflags faststart -strict -2 ' + subtitlesCmd + '-t 00:00:15 "' + bufferPath + destination + '"'
+                var cmd = 'ffmpeg -i "' + filePath + '" -ss '+ 0 +' -movflags faststart -strict -2 ' + subtitlesCmd + ' -t 00:00:15 "' + bufferPath + destination + '"'
                 debug(cmd)
 
                 exec(cmd, function (err) {
@@ -897,7 +897,9 @@ function hook(file, param, timeout) {
   debug('hook', cmd)
 
   setTimeout(function(){
-    exec(cmd)
+    exec(cmd, function (err, stdout, stderr) {
+      debug('stdout of hook', stdout)
+    })
   }, timeout)
 
 }

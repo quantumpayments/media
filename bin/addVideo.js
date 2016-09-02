@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 // requires
+var exec       = require('child_process').exec
 var fs         = require('fs')
 var program    = require('commander')
 var wc_db      = require('wc_db')
@@ -36,6 +37,16 @@ function bin(argv) {
     if (ret.ret) {
       console.log(ret.ret)
     }
+    if (/^file:/.test(mediaURI)) {
+      exec('./bin/getlength.sh ' + mediaURI, function(err, stdout, stderr) {
+        if (err) {
+          console.error(err)
+        } else {
+          console.log(stdout)
+        }
+      })
+    }
+
   }).catch(function(err) {
     console.error(err)
   })
