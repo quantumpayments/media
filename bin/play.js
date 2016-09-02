@@ -39,6 +39,7 @@ function bin(argv) {
   var path    = process.argv[8]  || 'https://localhost/data/buffer/video/'
   root        = process.argv[9]  || root
   var safe    = process.argv[10] || 'on'
+  var buffers = process.argv[11] || 2
 
   if (url) {
     path = url.parse(path).path
@@ -51,7 +52,7 @@ function bin(argv) {
 
   var config = require(__dirname + '/../config/config.js')
 
-  getMedia(uri, cert, mode, user, tag, path, safe).then(function(row) {
+  getMedia(uri, cert, mode, user, tag, path, safe, buffers).then(function(row) {
 
     debug('media returned')
     debug(row)
@@ -98,9 +99,7 @@ function bin(argv) {
     console.error(err)
   })
 
-
 }
-
 
 function getFnFromURI(uri, parent) {
   var arr = uri.split('=')
@@ -110,8 +109,6 @@ function getFnFromURI(uri, parent) {
   }
   return ret
 }
-
-
 
 function balance(source, conn, config) {
 
@@ -134,16 +131,16 @@ function balance(source, conn, config) {
 
 }
 
-
 /**
  * Get Media item
- * @param  {string} uri  The uri to get it from.
- * @param  {string} cert Location of an X.509 cert.
- * @param  {string} mode Mode api | http | buffer.
- * @param  {string} user The WebID of the user.
- * @return {object}      Promise with the row.
+ * @param  {string} uri     The uri to get it from.
+ * @param  {string} cert    Location of an X.509 cert.
+ * @param  {string} mode    Mode api | http | buffer.
+ * @param  {string} user    The WebID of the user.
+ * @param  {number} buffers The number of buffers
+ * @return {object}         Promise with the row.
  */
-function getMedia(uri, cert, mode, user, tag, path, safe) {
+function getMedia(uri, cert, mode, user, tag, path, safe, buffers) {
 
   return new Promise(function(resolve, reject) {
 
@@ -194,12 +191,10 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
               credit['https://w3id.org/cc#destination'] = workbot
               pay(credit)
 
-
             }).catch(function(err) {
               row.conn.close()
               reject(err)
             })
-
 
           } else if (fn === 'qpm_media.getRandomUnseenFragment') {
 
@@ -215,19 +210,16 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
               credit['https://w3id.org/cc#destination'] = workbot
               pay(credit)
 
-
             }).catch(function(err) {
               row.conn.close()
               reject(err)
             })
-
 
           }
         } else {
           reject(new Error('not enough funds'))
         }
       })
-
 
     } else if (mode === 'buffer') {
       var fn = getFnFromURI(uri, 'qpm_media')
@@ -303,8 +295,20 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
 
                 }
                 console.log('copying', filePath)
+                //var buffers = 2
+                var duration = 15
+                var start = parseInt(row.ret[0][0].end) + (duration * (buffers-1) )
 
-                var cmd = 'ffmpeg -i "' + filePath + '" -ss '+ row.ret[0][0].end +' -movflags faststart -strict -2  ' + subtitlesCmd + ' -t 00:00:15 "' + bufferPath + destination + '"'
+                splitVideo(filePath, start, subtitlesCmd, bufferPath, destination, path, row, true, user)
+
+                if (buffers === 2) {
+                  setTimeout(function() {
+                    splitVideo(filePath, start + duration, subtitlesCmd, bufferPath, destination, path, row, false, user)
+                  }, duration * 500)
+                }
+
+                /*
+                var cmd = 'ffmpeg -i "' + filePath + '" -ss '+ start +' -movflags faststart -strict -2  ' + subtitlesCmd + ' -t 00:00:15 "' + bufferPath + destination + '"'
                 debug(cmd)
 
                 exec(cmd, function (err) {
@@ -329,12 +333,11 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
                   }
 
                 })
+                */
 
               })
 
             }, 500)
-
-
 
           } else {
             reject(new Error('not enough funds'))
@@ -343,7 +346,6 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
 
       } else if (fn === 'qpm_media.getRatedFragment') {
         type = 1
-
 
         balance(user).then((ret)=>{
           return ret
@@ -420,8 +422,11 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
                   }
                 }
                 console.log('copying', filePath)
+                var start = row.ret[0][0].end
 
-                var cmd = 'sleep 1 ; ffmpeg -i "' + filePath + '" -ss '+ row.ret[0][0].end +' -movflags faststart -strict -2  ' + subtitlesCmd + ' -t 00:00:15 "' + bufferPath + destination + '"'
+                splitVideo(filePath, start, subtitlesCmd, bufferPath, destination, path, row, true, user)
+                /*
+                var cmd = 'sleep 1 ; ffmpeg -i "' + filePath + '" -ss '+ start +' -movflags faststart -strict -2  ' + subtitlesCmd + ' -t 00:00:15 "' + bufferPath + destination + '"'
 
                 debug(cmd)
 
@@ -431,7 +436,6 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
                   } else {
 
                     hook(root + '/..' + path + '../hook.sh', destination)
-
 
                     console.log("success!")
                     // pay
@@ -448,6 +452,7 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
                   }
 
                 })
+                */
 
               })
 
@@ -484,8 +489,19 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
                   }
                 }
                 console.log('copying', filePath)
+                var start = row.ret[0][0].end
+                var duration = 15
 
-                var cmd = 'ffmpeg -i "' + filePath + '" -ss '+ row.ret[0][0].end +' -movflags faststart -strict -2  ' + subtitlesCmd + ' -t 00:00:15 "' + bufferPath + destination + '"'
+                splitVideo(filePath, start, subtitlesCmd, bufferPath, destination, path, row, false, user)
+
+                if (buffers === 2) {
+                  setTimeout(function() {
+                    splitVideo(filePath, start + duration, subtitlesCmd, bufferPath, destination, path, row, false, user)
+                  }, duration * 500)
+                }
+
+                /*
+                var cmd = 'ffmpeg -i "' + filePath + '" -ss '+ start +' -movflags faststart -strict -2  ' + subtitlesCmd + ' -t 00:00:15 "' + bufferPath + destination + '"'
                 debug(cmd)
 
                 exec(cmd, function (err) {
@@ -503,25 +519,19 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
                   }
 
                 })
+                */
 
               })
 
-
             }, 500)
-
-
 
           } else {
             reject(new Error('not enough funds'))
           }
         })
 
-
-
       } else if (fn === 'qpm_media.getRandomUnseenFragment') {
         type = 2
-
-
 
         balance(user).then((ret)=>{
           return ret
@@ -594,8 +604,12 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
                   }
                 }
                 console.log('copying', filePath)
+                var start = 0
 
-                var cmd = 'ffmpeg -i "' + filePath + '" -ss '+ 0 +' -movflags faststart -strict -2 ' + subtitlesCmd + ' -t 00:00:15 "' + bufferPath + destination + '"'
+                splitVideo(filePath, start, subtitlesCmd, bufferPath, destination, path, row, true, user)
+
+                /*
+                var cmd = 'ffmpeg -i "' + filePath + '" -ss '+ start +' -movflags faststart -strict -2 ' + subtitlesCmd + ' -t 00:00:15 "' + bufferPath + destination + '"'
                 debug(cmd)
 
                 exec(cmd, function (err) {
@@ -619,6 +633,7 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
                   }
 
                 })
+                */
 
               })
 
@@ -657,7 +672,18 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
                   }
                 }
                 console.log('copying', filePath)
+                var duration = 15
 
+                var start = row.ret[0][0].end
+                splitVideo(filePath, start, subtitlesCmd, bufferPath, destination, path, row, false, user)
+
+                if (buffers === 2) {
+                  setTimeout(function() {
+                    splitVideo(filePath, start + duration, subtitlesCmd, bufferPath, destination, path, row, false, user)
+                  }, duration * 500)
+                }
+
+                /*
                 var cmd = 'ffmpeg -i "' + filePath + '" -ss '+ row.ret[0][0].end +' -movflags faststart -strict -2  ' + subtitlesCmd + ' -t 00:00:15 "' + bufferPath + destination + '"'
                 debug(cmd)
 
@@ -676,27 +702,18 @@ function getMedia(uri, cert, mode, user, tag, path, safe) {
                   }
 
                 })
+                */
 
               })
 
-
-
             }, 500)
-
-
 
           } else {
             reject(new Error('not enough funds'))
           }
         })
 
-
-
       }
-
-
-
-
 
     } else if (mode === 'http') {
 
@@ -795,6 +812,42 @@ function pay(credit, config, conn) {
         debug('pay', ret.ret)
       }
     })
+  })
+
+}
+
+function splitVideo(filePath, start, subtitlesCmd, bufferPath, destination, path, row, doPay, user) {
+  console.log('copying', filePath)
+
+  var cmd = 'ffmpeg -i "' + filePath + '" -ss ' + start + ' -movflags faststart -strict -2  ' + subtitlesCmd + ' -t 00:00:15 "' + bufferPath + destination + '"'
+  debug(cmd)
+
+  exec(cmd, function (err) {
+    if (err) {
+      console.error(err)
+    } else {
+
+      hook(root + '/..' + path + '../hook.sh', destination)
+
+      console.log("success!")
+
+      if (doPay) {
+        console.log("success!")
+        // pay
+        var credit = {}
+        credit['https://w3id.org/cc#source'] = user
+        credit['https://w3id.org/cc#amount'] = cost
+        credit['https://w3id.org/cc#currency'] = 'https://w3id.org/cc#bit'
+        credit['https://w3id.org/cc#destination'] = workbot
+        pay(credit)
+
+      }
+
+      if (row && row.conn) {
+        row.conn.close()
+      }
+    }
+
   })
 
 }
