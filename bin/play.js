@@ -20,6 +20,8 @@ var workbot = 'https://workbot.databox.me/profile/card#me'
 var cost    = 40
 var type    = 0
 var root    = __dirname
+var seen    = []
+var sort    = 'desc'
 
 
 /**
@@ -235,12 +237,36 @@ function getMedia(uri, cert, mode, user, tag, path, safe, buffers) {
 
             var bufferPath = root + '/../' + path
             var files = fs.readdirSync(bufferPath)
+
+            var f = []
+            for (var i = 0; i < files.length; i++) {
+              var file    = files[i]
+              if ( file && /.ttl$/.test(file) ) {
+                continue
+              }
+              var mtime   = fs.statSync(bufferPath + file).mtime.getTime()
+              var start   = getStart(file)
+              var type    = getType(file)
+              var fileURI = getFile(file)
+              f.push({ "mtime" : mtime, "uri" : file, "file" : fileURI, "start" : start, "type" : type })
+            }
+
+            f.sort(sortFiles)
+            debug('f', f)
+
+            var current = getCurrentVideo(0, f, buffers)
+            debug('current', current, f[current], f[current - 1].uri)
+
             files.sort(function(a, b) {
                return fs.statSync(bufferPath + b).mtime.getTime() -
                       fs.statSync(bufferPath + a).mtime.getTime()
             })
             var file = getNextFile(files, type)
+            file = f[current].uri
+
+            debug('file', file)
             if (files && file) {
+              var duration = 15
               var nextFile = bufferPath + file
               var start = file.split(',')[0]
               var end = parseInt(start)
@@ -277,63 +303,26 @@ function getMedia(uri, cert, mode, user, tag, path, safe, buffers) {
                 params.safe = 1
               }
               qpm_media.getLastFragment(params).then(function(row) {
-                debug('unseen', row.ret)
-                var cacheURI = row.ret[0][0].cacheURI || row.ret[0][0].uri
-                var filePath = cacheURI.substr('file://'.length)
-                var destination =  row.ret[0][0].end + ',' + type + ',' + urlencode(cacheURI) + '.mp4'
-                var subtitles = row.ret[0][0].subtitlesURI || ''
-                subtitlesCmd = ''
-                if (/file:\/\//.test(subtitles)) {
-                  subtitles = subtitles.substr(7)
-                }
-                if (subtitles) {
-                  var charenc = row.ret[0][0].charenc
-                  var subtitlesCmd = ' -vf subtitles="' + subtitles + '"'
-                  if (charenc) {
-                    subtitlesCmd += ':charenc=' + charenc + ' '
-                  }
+                debug('getLastFragment', row.ret)
+                debug('files', files)
 
+                var duration    = 15
+                var start       = parseInt(row.ret[0][0].end) + (duration * (buffers-1) )
+                splitVideo(start, bufferPath, path, row, true, user, 0, duration)
+
+                var duration    = 15
+                var start       = parseInt(row.ret[0][0].end) + (duration * (buffers-2) )
+                var candidate = start + ',' + type + ',' + urlencode(row.ret[0][0].uri) + '.mp4'
+                debug('candidate', candidate )
+                if ( files.indexOf(candidate) !== -1 ) {
+                  debug('candidate is in files')
+                } else {
+                  debug('candidate is NOT in files')
+                  if (parseInt(buffers) === 2) {
+                    splitVideo(start, bufferPath, path, row, true, user, 0, duration)
+                  }
                 }
-                console.log('copying', filePath)
                 //var buffers = 2
-                var duration = 15
-                var start = parseInt(row.ret[0][0].end) + (duration * (buffers-1) )
-
-                splitVideo(filePath, start, subtitlesCmd, bufferPath, destination, path, row, true, user)
-
-                if (buffers === 2) {
-                  setTimeout(function() {
-                    splitVideo(filePath, start + duration, subtitlesCmd, bufferPath, destination, path, row, false, user)
-                  }, duration * 500)
-                }
-
-                /*
-                var cmd = 'ffmpeg -i "' + filePath + '" -ss '+ start +' -movflags faststart -strict -2  ' + subtitlesCmd + ' -t 00:00:15 "' + bufferPath + destination + '"'
-                debug(cmd)
-
-                exec(cmd, function (err) {
-                  if (err) {
-                    console.error(err)
-                  } else {
-
-                    hook(root + '/..'+ path + '../hook.sh', destination)
-
-                    console.log("success!")
-                    // pay
-                    var credit = {}
-                    credit['https://w3id.org/cc#source'] = user
-                    credit['https://w3id.org/cc#amount'] = cost
-                    credit['https://w3id.org/cc#currency'] = 'https://w3id.org/cc#bit'
-                    credit['https://w3id.org/cc#destination'] = workbot
-                    pay(credit)
-
-                    if (row && row.conn) {
-                      row.conn.close()
-                    }
-                  }
-
-                })
-                */
 
               })
 
@@ -402,10 +391,12 @@ function getMedia(uri, cert, mode, user, tag, path, safe, buffers) {
                 params.safe = 1
               }
               fn(params).then(function(row) {
+                /*
                 debug('unseen', row.ret)
+                var start    = row.ret[0][0].end
                 var cacheURI = row.ret[0][0].cacheURI || row.ret[0][0].uri
                 var filePath = cacheURI.substr('file://'.length)
-                var destination =  row.ret[0][0].end + ',' + type + ',' + urlencode(cacheURI) + '.mp4'
+                var destination = start + ',' + type + ',' + urlencode(cacheURI) + '.mp4'
                 var subtitles = row.ret[0][0].subtitlesURI || ''
                 subtitlesCmd = ''
                 if (/file:\/\//.test(subtitles)) {
@@ -422,9 +413,14 @@ function getMedia(uri, cert, mode, user, tag, path, safe, buffers) {
                   }
                 }
                 console.log('copying', filePath)
-                var start = row.ret[0][0].end
+                */
 
-                splitVideo(filePath, start, subtitlesCmd, bufferPath, destination, path, row, true, user)
+                var start = row.ret[0][0].end
+                var duration = 15
+
+                splitVideo(start, bufferPath, path, row, true, user, 1, duration)
+
+
                 /*
                 var cmd = 'sleep 1 ; ffmpeg -i "' + filePath + '" -ss '+ start +' -movflags faststart -strict -2  ' + subtitlesCmd + ' -t 00:00:15 "' + bufferPath + destination + '"'
 
@@ -469,10 +465,34 @@ function getMedia(uri, cert, mode, user, tag, path, safe, buffers) {
                 params.safe = 1
               }
               qpm_media.getLastFragment(params).then(function(row) {
+
+                debug('getLastFragment', row.ret)
+                debug('files', files)
+
+                var duration    = 15
+                var start       = parseInt(row.ret[0][0].end) + (duration * (buffers-1) )
+                splitVideo(start, bufferPath, path, row, true, user, 0, duration)
+
+                var duration    = 15
+                var start       = parseInt(row.ret[0][0].end) + (duration * (buffers-2) )
+                var candidate = start + ',' + type + ',' + urlencode(row.ret[0][0].uri) + '.mp4'
+                debug('candidate', candidate )
+                if ( files.indexOf(candidate) !== -1 ) {
+                  debug('candidate is in files')
+                } else {
+                  debug('candidate is NOT in files')
+                  if (parseInt(buffers) === 2) {
+                    splitVideo(start, bufferPath, path, row, true, user, 0, duration)
+                  }
+                }
+
+
+                /*
                 debug('unseen', row.ret)
+                var start    = row.ret[0][0].end
                 var cacheURI = row.ret[0][0].cacheURI || row.ret[0][0].uri
                 var filePath = cacheURI.substr('file://'.length)
-                var destination =  row.ret[0][0].end + ',' + 0 + ',' + urlencode(cacheURI) + '.mp4'
+                var destination =  start + ',' + 0 + ',' + urlencode(cacheURI) + '.mp4'
                 var subtitles = row.ret[0][0].subtitlesURI || ''
                 subtitlesCmd = ''
                 if (/file:\/\//.test(subtitles)) {
@@ -494,11 +514,13 @@ function getMedia(uri, cert, mode, user, tag, path, safe, buffers) {
 
                 splitVideo(filePath, start, subtitlesCmd, bufferPath, destination, path, row, false, user)
 
-                if (buffers === 2) {
+                if ( parseInt(buffers) === 2 ) {
                   setTimeout(function() {
+                    var destination =  ( start + duration ) + ',' + 0 + ',' + urlencode(cacheURI) + '.mp4'
                     splitVideo(filePath, start + duration, subtitlesCmd, bufferPath, destination, path, row, false, user)
                   }, duration * 500)
                 }
+                */
 
                 /*
                 var cmd = 'ffmpeg -i "' + filePath + '" -ss '+ start +' -movflags faststart -strict -2  ' + subtitlesCmd + ' -t 00:00:15 "' + bufferPath + destination + '"'
@@ -584,29 +606,13 @@ function getMedia(uri, cert, mode, user, tag, path, safe, buffers) {
               }
               debug('play.js', params, safe)
               qpm_media.getRandomUnseenFragment(params).then(function(row) {
-                debug('unseen', row.ret)
-                var cacheURI = row.ret[0][0].cacheURI || row.ret[0][0].uri
-                var filePath = cacheURI.substr('file://'.length)
-                var destination =  '0' + ',' + type + ',' + urlencode(cacheURI) + '.mp4'
-                var subtitles = row.ret[0][0].subtitlesURI || ''
-                subtitlesCmd = ''
-                if (/file:\/\//.test(subtitles)) {
-                  subtitles = subtitles.substr(7)
-                }
-                if (subtitles) {
-                  if (subtitles) {
-                    var charenc = row.ret[0][0].charenc
-                    var subtitlesCmd = ' -vf subtitles="' + subtitles + '"'
-                    if (charenc) {
-                      subtitlesCmd += ':charenc=' + charenc + ' '
-                    }
+                debug('getRandomUnseenFragment', row.ret)
 
-                  }
-                }
-                console.log('copying', filePath)
                 var start = 0
+                var duration = 15
 
-                splitVideo(filePath, start, subtitlesCmd, bufferPath, destination, path, row, true, user)
+                splitVideo(start, bufferPath, path, row, true, user, 2, duration)
+
 
                 /*
                 var cmd = 'ffmpeg -i "' + filePath + '" -ss '+ start +' -movflags faststart -strict -2 ' + subtitlesCmd + ' -t 00:00:15 "' + bufferPath + destination + '"'
@@ -652,10 +658,36 @@ function getMedia(uri, cert, mode, user, tag, path, safe, buffers) {
                 params.safe = 1
               }
               qpm_media.getLastFragment(params).then(function(row) {
+
+                debug('getLastFragment', row.ret)
+                debug('files', files)
+
+                var duration    = 15
+                var start       = parseInt(row.ret[0][0].end) + (duration * (buffers-1) )
+                splitVideo(start, bufferPath, path, row, true, user, 0, duration)
+
+                var duration    = 15
+                var start       = parseInt(row.ret[0][0].end) + (duration * (buffers-2) )
+                var candidate = start + ',' + type + ',' + urlencode(row.ret[0][0].uri) + '.mp4'
+                debug('candidate', candidate )
+                if ( files.indexOf(candidate) !== -1 ) {
+                  debug('candidate is in files')
+                } else {
+                  debug('candidate is NOT in files')
+                  if (parseInt(buffers) === 2) {
+                    splitVideo(start, bufferPath, path, row, true, user, 0, duration)
+                  }
+                }
+
+
+                /*
                 debug('unseen', row.ret)
+                var start    = row.ret[0][0].end
                 var cacheURI = row.ret[0][0].cacheURI || row.ret[0][0].uri
                 var filePath = cacheURI.substr('file://'.length)
-                var destination =  row.ret[0][0].end + ',' + 0 + ',' + urlencode(cacheURI) + '.mp4'
+                var destination =  start + ',' + 0 + ',' + urlencode(cacheURI) + '.mp4'
+                */
+                /*
                 var subtitles = row.ret[0][0].subtitlesURI || ''
                 subtitlesCmd = ''
                 if (/file:\/\//.test(subtitles)) {
@@ -671,19 +703,21 @@ function getMedia(uri, cert, mode, user, tag, path, safe, buffers) {
 
                   }
                 }
+                */
+               /*
                 console.log('copying', filePath)
                 console.log('buffers', buffers)
                 var duration = 15
 
-                var start = row.ret[0][0].end
                 splitVideo(filePath, start, subtitlesCmd, bufferPath, destination, path, row, false, user)
 
-                if (buffers === 2) {
+                if ( parseInt(buffers) === 2 ) {
                   setTimeout(function() {
+                    var destination =  ( start + duration ) + ',' + 0 + ',' + urlencode(cacheURI) + '.mp4'
                     splitVideo(filePath, start + duration, subtitlesCmd, bufferPath, destination, path, row, false, user)
                   }, duration * 500)
                 }
-
+                */
                 /*
                 var cmd = 'ffmpeg -i "' + filePath + '" -ss '+ row.ret[0][0].end +' -movflags faststart -strict -2  ' + subtitlesCmd + ' -t 00:00:15 "' + bufferPath + destination + '"'
                 debug(cmd)
@@ -817,8 +851,25 @@ function pay(credit, config, conn) {
 
 }
 
-function splitVideo(filePath, start, subtitlesCmd, bufferPath, destination, path, row, doPay, user) {
-  console.log('split', filePath, start, bufferPath)
+function splitVideo(start, bufferPath, path, row, doPay, user, type, duration) {
+  console.log('split', start, bufferPath)
+
+  var cacheURI    = row.ret[0][0].cacheURI || row.ret[0][0].uri
+  var filePath    = cacheURI.substr('file://'.length)
+  var destination = start + ',' + type + ',' + urlencode(cacheURI) + '.mp4'
+
+  var subtitles   = row.ret[0][0].subtitlesURI || ''
+  var subtitlesCmd    = ''
+  if (/file:\/\//.test(subtitles)) {
+    subtitles = subtitles.substr(7)
+  }
+  if (subtitles) {
+    var charenc = row.ret[0][0].charenc
+    var subtitlesCmd = ' -vf subtitles="' + subtitles + '"'
+    if (charenc) {
+      subtitlesCmd += ':charenc=' + charenc + ' '
+    }
+  }
 
   var cmd = 'ffmpeg -i "' + filePath + '" -ss ' + start + ' -preset ultrafast -movflags +faststart -strict -2  ' + subtitlesCmd + ' -t 00:00:15 "' + bufferPath + destination + '"'
   debug(cmd)
@@ -961,6 +1012,132 @@ function hook(file, param, timeout) {
 // If one import this file, this is a module, otherwise a library
 if (require.main === module) {
   bin(process.argv)
+}
+
+/**
+ * sort files
+ * @param  {object} a first element
+ * @param  {object} b second element
+ */
+function sortFiles(a, b) {
+  if (a.type === b.type) {
+    if (a.file === b.file) {
+      var ai = a.start || a.mtime || a.index
+      var bi = b.start || b.mtime || b.index
+      if (sort === 'desc') {
+        return parseFloat(bi) - parseFloat(ai)
+      } else {
+        return parseFloat(ai) - parseFloat(bi)
+      }
+    } else {
+      var ai = a.mtime || a.index
+      var bi = b.mtime || b.index
+      if (sort === 'desc') {
+        return parseFloat(bi) - parseFloat(ai)
+      } else {
+        return parseFloat(ai) - parseFloat(bi)
+      }
+    }
+  } else {
+    var order = [1,2,0]
+    return order[b.type] - order[a.type]
+  }
+}
+
+/**
+* Get type of uri
+* @param  {string} str The uri
+* @return {number}     The type or null
+*/
+function getType(str) {
+  var ret = null
+  var match = /[0-9]+,[0-9]+,.*/.test(str)
+  if (!match) {
+    return null
+  }
+  var a = str.split(',')
+  if (a && a[1]) {
+    ret = parseInt(a[1])
+  } else {
+    return null
+  }
+  if (isNaN(ret)) {
+    return null
+  }
+  return ret
+}
+
+/**
+* Get file of uri
+* @param  {string} str The uri
+* @return {string}     The file or null
+*/
+function getFile(str) {
+  var ret = null
+  var match = /[0-9]+,[0-9]+,.*/.test(str)
+  if (!match) {
+    return null
+  }
+  var a = str.split(',')
+  if (a && a[2]) {
+    ret = a[2]
+    return ret
+  } else {
+    return null
+  }
+  if (isNaN(ret)) {
+    return null
+  }
+  return ret
+}
+
+/**
+* Get start of uri
+* @param  {string} str The uri
+* @return {number}     The start or -1
+*/
+function getStart(str) {
+  var ret = null
+  var match = /[0-9]+,[0-9]+,.*/.test(str)
+  if (!match) {
+    return null
+  }
+  var a = str.split(',')
+  if (a && a[0]) {
+    var end = a[0]
+    ret = parseInt(end)
+    return ret
+  } else {
+    return null
+  }
+  if (isNaN(ret)) {
+    return null
+  }
+  return ret
+}
+
+function getCurrentVideo(type, files, buffers) {
+  debug('getCurrentVideo', type, buffers)
+  var count = 0
+  for (var i = 0; i < files.length; i++) {
+    var file = files[i]
+    var href = file.uri
+    if (getType(href) === type) {
+      count++
+      debug('getCurrentVideo', count, buffers)
+      if (count === parseInt(buffers) || type != 0) {
+        if ( seen.indexOf(file.uri) === -1 ) {
+          seen.push(file.uri)
+          return i
+        } else {
+          seen.push(files[candidate].uri)
+          return candidate
+        }
+      }
+      var candidate = i
+      debug('candidate', candidate)
+    }
+  }
 }
 
 module.exports = bin
