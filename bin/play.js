@@ -672,6 +672,7 @@ function getMedia(uri, cert, mode, user, tag, path, safe, buffers) {
                   }
                 }
                 console.log('copying', filePath)
+                console.log('buffers', buffers)
                 var duration = 15
 
                 var start = row.ret[0][0].end
@@ -817,9 +818,9 @@ function pay(credit, config, conn) {
 }
 
 function splitVideo(filePath, start, subtitlesCmd, bufferPath, destination, path, row, doPay, user) {
-  console.log('copying', filePath)
+  console.log('split', filePath, start, bufferPath)
 
-  var cmd = 'ffmpeg -i "' + filePath + '" -ss ' + start + ' -movflags faststart -strict -2  ' + subtitlesCmd + ' -t 00:00:15 "' + bufferPath + destination + '"'
+  var cmd = 'ffmpeg -i "' + filePath + '" -ss ' + start + ' -preset ultrafast -movflags +faststart -strict -2  ' + subtitlesCmd + ' -t 00:00:15 "' + bufferPath + destination + '"'
   debug(cmd)
 
   exec(cmd, function (err) {
