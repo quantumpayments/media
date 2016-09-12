@@ -17,7 +17,7 @@ var wc_db         = require('wc_db')
 
 
 var workbot = 'https://workbot.databox.me/profile/card#me'
-var cost    = 40
+var cost    = 100
 var type    = 0
 var root    = __dirname
 var seen    = []
@@ -828,11 +828,6 @@ function removeComma(uri) {
   return ret
 }
 
-function removeMp4(uri) {
-  var ret =  uri.replace(/.mp4$/, '')
-  return ret
-}
-
 function pay(credit, config, conn) {
 
   var config = require(__dirname + '/../config/config.js')
@@ -849,6 +844,11 @@ function pay(credit, config, conn) {
     })
   })
 
+}
+
+function removeMp4(uri) {
+  var ret =  uri.replace(/.mp4$/, '')
+  return ret
 }
 
 function splitVideo(start, bufferPath, path, row, doPay, user, type, duration) {
