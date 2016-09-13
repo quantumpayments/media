@@ -5,6 +5,8 @@ var exec = require('child_process').exec
 var program = require('commander')
 var qpmMedia = require('../')
 
+var fileProtocol = 'file://'
+
 /**
  * version as a command
  */
@@ -25,6 +27,10 @@ function bin (argv) {
 
   if (!mediaURI) {
     console.error('Please supply a media URI')
+  }
+
+  if (/^\//.test(mediaURI)) {
+    mediaURI = fileProtocol + mediaURI
   }
 
   qpmMedia.addMedia(mediaURI, null, safe).then(function (ret) {
