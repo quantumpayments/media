@@ -123,29 +123,30 @@ function getMediaByBuffer(uri, cert, mode, user, safe, bufferURI) {
 
   return new Promise(function(resolve, reject) {
 
+    //var bufferPath = __dirname + '/../data/buffer/image/'
+    debug('bufferPath', bufferPath)
+    var files = fs.readdirSync(bufferPath)
+    files.sort(function(a, b) {
+      return fs.statSync(bufferPath + b).mtime.getTime() -
+      fs.statSync(bufferPath + a).mtime.getTime()
+    })
+
+    var file = getNextFile(files)
+    debug('nextFile', file)
+    if (file) {
+      var nextFile = bufferPath + file
+      var ret = { 'uri' : nextFile, 'cacheURI' : urlencode.decode(file) }
+      var lastFile = bufferPath + files[files.length - 1]
+      resolve(ret)
+    } else {
+      reject(new Error('nothing in buffer'))
+    }
+
+
     balance(user).then((ret)=>{
       return ret
     }).then(function(ret){
       if ( ret >= algos.getRandomUnseenImage.cost ) {
-
-        //var bufferPath = __dirname + '/../data/buffer/image/'
-        debug('bufferPath', bufferPath)
-        var files = fs.readdirSync(bufferPath)
-        files.sort(function(a, b) {
-          return fs.statSync(bufferPath + b).mtime.getTime() -
-          fs.statSync(bufferPath + a).mtime.getTime()
-        })
-
-        var file = getNextFile(files)
-        debug('nextFile', file)
-        if (file) {
-          var nextFile = bufferPath + file
-          var ret = { 'uri' : nextFile, 'cacheURI' : urlencode.decode(file) }
-          var lastFile = bufferPath + files[files.length - 1]
-          resolve(ret)
-        } else {
-          reject(new Error('nothing in buffer'))
-        }
 
         addMediaToBuffer(uri, cert, mode, user, safe, bufferURI)
 
