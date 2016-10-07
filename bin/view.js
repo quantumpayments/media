@@ -1,51 +1,49 @@
 #!/usr/bin/env node
 
-var debug         = require('debug')('qpm_media:view')
+var debug = require('debug')('qpm_media:view')
 debug('begin qpm_media:view')
 
 // requires
 var child_process = require('child_process')
-var cookie        = require('cookie')
-var fs            = require('fs-extra')
-var program       = require('commander')
-var qpm_media     = require('../lib/qpm_media')
-var request       = require('request')
-var url           = require('url')
-var urlencode     = require('urlencode')
-var webcredits    = require('webcredits')
-var wc_db         = require('wc_db')
+var cookie = require('cookie')
+var fs = require('fs-extra')
+var qpm_media = require('../lib/qpm_media')
+var request = require('request')
+var url = require('url')
+var urlencode = require('urlencode')
+var webcredits = require('webcredits')
+var wc_db = require('wc_db')
 
 // globals
-var root    = __dirname
+var root = __dirname
 
-var algos   = {
-  "getRandomUnseenImage" : {
-    "cost"         : 25,
-    "function"     : qpm_media.getRandomUnseenImage,
-    "shortcode"    : "random_rate",
-    "counterparty" : 'https://workbot.databox.me/profile/card#me'
+var algos = {
+  'getRandomUnseenImage': {
+    'cost': 25,
+    'function': qpm_media.getRandomUnseenImage,
+    'shortcode': 'random_rate',
+    'counterparty': 'https://workbot.databox.me/profile/card#me'
   }
 }
 
 /**
 * version as a command
 */
-function bin(argv) {
-
+function bin (argv) {
   debug('start')
 
   // setup config
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
 
-  var uri       = process.argv[2]  || 'https://localhost:3000/random_rate'
-  var cert      = process.argv[3]  || process.env['CERT']
-  var display   = process.argv[4]  || process.env['DISP'] || 'display'
-  var mode      = process.argv[5]  || 'buffer'
-  var user      = process.argv[6]  || 'http://melvincarvalho.com/#me'
-  var tag       = process.argv[7]
-  var bufferURI = process.argv[8]  || 'https://localhost/data/buffer/video/'
-  root          = process.argv[9]  || root
-  var safe      = process.argv[10] || 'on'
+  var uri = process.argv[2] || 'https://localhost:3000/random_rate'
+  var cert = process.argv[3] || process.env['CERT']
+  var display = process.argv[4] || process.env['DISP'] || 'display'
+  var mode = process.argv[5] || 'buffer'
+  var user = process.argv[6] || 'http://melvincarvalho.com/#me'
+  var tag = process.argv[7]
+  var bufferURI = process.argv[8] || 'https://localhost/data/buffer/video/'
+  root = process.argv[9] || root
+  var safe = process.argv[10] || 'on'
 
   debug(argv)
 
@@ -56,8 +54,7 @@ function bin(argv) {
 
   var config = require(__dirname + '/../config/config.js')
 
-  getMedia(uri, cert, mode, user, safe, bufferURI).then(function(row) {
-
+  getMedia(uri, cert, mode, user, safe, bufferURI).then(function (row) {
     var uri = row.uri
     var cacheURI = row.cacheURI
     var displayURI = cacheURI || uri
@@ -66,14 +63,12 @@ function bin(argv) {
     debug('cmd', cmd)
     debug('row', row)
     exec(cmd)
-    var params = { cacheURI : cacheURI }
+    var params = { cacheURI: cacheURI }
     params.reviewer = user
     updateLastSeen(params, config)
-
-  }).catch(function(err){
+  }).catch(function (err) {
     console.error(err)
   })
-
 }
 
 /**
@@ -86,22 +81,14 @@ function bin(argv) {
 * @param  {string} bufferURI The URI of the buffer.
 * @return {object}           Promise with the row.
 */
-function getMedia(uri, cert, mode, user, safe, bufferURI) {
-
+function getMedia (uri, cert, mode, user, safe, bufferURI) {
   if (mode === 'api') {
-
     return getMediaByAPI(uri, cert, mode, user, safe, bufferURI)
-
   } else if (mode === 'buffer') {
-
     return getMediaByBuffer(uri, cert, mode, user, safe, bufferURI)
-
   } else if (mode === 'http') {
-
     return getMediaByHTTP(uri, cert, mode, user, safe, bufferURI)
-
   }
-
 }
 
 /**
@@ -114,19 +101,17 @@ function getMedia(uri, cert, mode, user, safe, bufferURI) {
 * @param  {string} bufferURI The URI of the buffer.
 * @return {object}           Promise with the row.
 */
-function getMediaByBuffer(uri, cert, mode, user, safe, bufferURI) {
-
+function getMediaByBuffer (uri, cert, mode, user, safe, bufferURI) {
   var bufferPath = root
   if (bufferURI) {
     bufferPath += '/../' + url.parse(bufferURI).path
   }
 
-  return new Promise(function(resolve, reject) {
-
-    //var bufferPath = __dirname + '/../data/buffer/image/'
+  return new Promise(function (resolve, reject) {
+    // var bufferPath = __dirname + '/../data/buffer/image/'
     debug('bufferPath', bufferPath)
     var files = fs.readdirSync(bufferPath)
-    files.sort(function(a, b) {
+    files.sort(function (a, b) {
       return fs.statSync(bufferPath + b).mtime.getTime() -
       fs.statSync(bufferPath + a).mtime.getTime()
     })
@@ -135,28 +120,23 @@ function getMediaByBuffer(uri, cert, mode, user, safe, bufferURI) {
     debug('nextFile', file)
     if (file) {
       var nextFile = bufferPath + file
-      var ret = { 'uri' : nextFile, 'cacheURI' : urlencode.decode(file) }
-      var lastFile = bufferPath + files[files.length - 1]
+      var ret = { 'uri': nextFile, 'cacheURI': urlencode.decode(file) }
+      // var lastFile = bufferPath + files[files.length - 1]
       resolve(ret)
     } else {
       reject(new Error('nothing in buffer'))
     }
 
-
-    balance(user).then((ret)=>{
+    balance(user).then((ret) => {
       return ret
-    }).then(function(ret){
-      if ( ret >= algos.getRandomUnseenImage.cost ) {
-
+    }).then(function (ret) {
+      if (ret >= algos.getRandomUnseenImage.cost) {
         addMediaToBuffer(uri, cert, mode, user, safe, bufferURI)
-
       } else {
         reject(new Error('not enough funds'))
       }
     })
-
   })
-
 }
 
 /**
@@ -169,16 +149,15 @@ function getMediaByBuffer(uri, cert, mode, user, safe, bufferURI) {
 * @param  {string} bufferURI The URI of the buffer.
 * @return {object}           Promise with the row.
 */
-function addMediaToBuffer(uri, cert, mode, user, safe, bufferURI) {
-
-  var bufferPath = root
-  if (bufferURI) {
-    bufferPath += '/../' + url.parse(bufferURI).path
-  }
+function addMediaToBuffer (uri, cert, mode, user, safe, bufferURI) {
+  // var bufferPath = root
+  // if (bufferURI) {
+  //  bufferPath += '/../' + url.parse(bufferURI).path
+  // }
 
   setTimeout(() => {
     try {
-      //fs.unlinkSync(lastFile)
+      // fs.unlinkSync(lastFile)
     } catch (e) {
       console.error(e)
     }
@@ -189,20 +168,18 @@ function addMediaToBuffer(uri, cert, mode, user, safe, bufferURI) {
     } else {
       params.safe = 1
     }
-    algos.getRandomUnseenImage.function(params).then(function(row) {
+    algos.getRandomUnseenImage.function(params).then(function (row) {
       debug('unseen', row.ret)
       var cacheURI = row.ret[0][0].cacheURI
       var filePath = cacheURI.substr('file://'.length)
       debug('copying', filePath)
 
-      //copyMedia(filePath, bufferPath + urlencode(cacheURI), function (err) {
+      // copyMedia(filePath, bufferPath + urlencode(cacheURI), function (err) {
       copyMedia(filePath, bufferURI + urlencode(cacheURI), cert, function (err) {
-
         if (err) {
           debug(err)
         } else {
-
-          console.log("success!")
+          console.log('success!')
           // pay
           var credit = {}
           credit['https://w3id.org/cc#source'] = user
@@ -216,13 +193,9 @@ function addMediaToBuffer(uri, cert, mode, user, safe, bufferURI) {
             row.conn.close()
           }
         }
-
       })
-
     })
-
   }, 500)
-
 }
 
 /**
@@ -232,8 +205,7 @@ function addMediaToBuffer(uri, cert, mode, user, safe, bufferURI) {
  * @param  {string}   cert     path to certificate
  * @param  {Function} callback callback
  */
-function copyMedia(path, to, cert, callback) {
-
+function copyMedia (path, to, cert, callback) {
   var hookPath = __dirname + '/../data/buffer/hook.sh'
   debug('copyMedia', path, to, cert)
 
@@ -243,26 +215,26 @@ function copyMedia(path, to, cert, callback) {
     debug('parsed', parsed)
 
     var domain = url.parse(to).domain
-    var file   = url.parse(to).path
+    var file = url.parse(to).path
     debug(domain, file)
 
-    var a   = parsed.pathname.split('/')
+    var a = parsed.pathname.split('/')
     var uri = parsed.protocol + '//' + parsed.host
-    for (var i = 0; i < a.length-1; i++) {
+    for (var i = 0; i < a.length - 1; i++) {
       uri += a[i] + '/'
     }
-    uri +=   urlencode(a[i])
+    uri += urlencode(a[i])
     debug('uri', uri)
 
-    //uri = 'https://phone.servehttp.com:8000/data/buffer/image/'  + urlencode('file%3A%2F%2F%2Fmedia%2Fmelvin%2FElements%2Fpichunter.com%2F2443342_15_o.jpg')
+    // uri = 'https://phone.servehttp.com:8000/data/buffer/image/'  + urlencode('file%3A%2F%2F%2Fmedia%2Fmelvin%2FElements%2Fpichunter.com%2F2443342_15_o.jpg')
 
     var options = {
-      method  : 'PUT',
-      url     : uri,
-      key     : fs.readFileSync(cert),
-      cert    : fs.readFileSync(cert),
-      headers : { //We can define headers too
-        "Content-Type" : "image/jpg"
+      method: 'PUT',
+      url: uri,
+      key: fs.readFileSync(cert),
+      cert: fs.readFileSync(cert),
+      headers: { // We can define headers too
+        'Content-Type': 'image/jpg'
       }
     }
 
@@ -274,27 +246,23 @@ function copyMedia(path, to, cert, callback) {
       } else {
         debug('success')
         callback(null)
-        setTimeout(function(){
+        setTimeout(function () {
           exec(hookPath)
         }, 0)
       }
     }))
-
   } else {
-
     fs.copy(path, to, function (err) {
       if (err) {
         callback(err)
       } else {
         callback(null, null)
-        setTimeout(function(){
+        setTimeout(function () {
           exec(hookPath)
         }, 0)
       }
     })
-
   }
-
 }
 
 /**
@@ -307,15 +275,13 @@ function copyMedia(path, to, cert, callback) {
 * @param  {string} bufferURI The URI of the buffer.
 * @return {object}           Promise with the row.
 */
-function getMediaByAPI(uri, cert, mode, user, safe, bufferURI) {
-
-  return new Promise(function(resolve, reject) {
-
-    balance(user).then((ret)=>{
+function getMediaByAPI (uri, cert, mode, user, safe, bufferURI) {
+  return new Promise(function (resolve, reject) {
+    balance(user).then((ret) => {
       return ret
-    }).then(function(ret){
-      if ( ret >= algos.getRandomUnseenImage.cost ) {
-        qpm_media.getRandomUnseenImage().then(function(row) {
+    }).then(function (ret) {
+      if (ret >= algos.getRandomUnseenImage.cost) {
+        qpm_media.getRandomUnseenImage().then(function (row) {
           row.conn.close()
           resolve(row.ret[0][0])
 
@@ -326,8 +292,7 @@ function getMediaByAPI(uri, cert, mode, user, safe, bufferURI) {
           credit['https://w3id.org/cc#currency'] = 'https://w3id.org/cc#bit'
           credit['https://w3id.org/cc#destination'] = algos.getRandomUnseenImage.counterparty
           pay(credit)
-
-        }).catch(function(err) {
+        }).catch(function (err) {
           row.conn.close()
           reject(err)
         })
@@ -335,9 +300,7 @@ function getMediaByAPI(uri, cert, mode, user, safe, bufferURI) {
         reject(new Error('not enough funds'))
       }
     })
-
   })
-
 }
 
 /**
@@ -350,10 +313,8 @@ function getMediaByAPI(uri, cert, mode, user, safe, bufferURI) {
 * @param  {string} bufferURI The URI of the buffer.
 * @return {object}           Promise with the row.
 */
-function getMediaByHTTP(uri, cert, mode, user, safe, bufferURI) {
-
-  return new Promise(function(resolve, reject) {
-
+function getMediaByHTTP (uri, cert, mode, user, safe, bufferURI) {
+  return new Promise(function (resolve, reject) {
     var cookiePath = __dirname + '/../data/cookie.json'
 
     var cookies = readCookie(cookiePath)
@@ -366,37 +327,31 @@ function getMediaByHTTP(uri, cert, mode, user, safe, bufferURI) {
       url: uri,
       key: fs.readFileSync(cert),
       cert: fs.readFileSync(cert),
-      headers: { //We can define headers too
-        'Accept': 'application/json',
+      headers: { // We can define headers too
+        'Accept': 'application/json'
       }
     }
 
     request.get(options, function (error, response, body) {
-
       writeCookie(response, cookiePath)
 
-      if (!error && response.statusCode == 200) {
-
+      if (!error && response.statusCode === 200) {
         json = JSON.parse(body)
         resolve(json)
-
       } else {
-        reject(error);
+        reject(error)
       }
-
     })
-
   })
-
 }
 
 /**
 * Execute a command
 * @param  {string} cmd Command as a string.
 */
-function exec(cmd) {
+function exec (cmd) {
   debug('executing cmd', cmd)
-  child_process.exec(cmd, function(err, stdout, stderr){
+  child_process.exec(cmd, function (err, stdout, stderr) {
     debug('command completed')
   })
 }
@@ -406,8 +361,7 @@ function exec(cmd) {
 * @param  {string} cookiePath The path to the cookie file.
 * @return {object}            The cookie object
 */
-function readCookie(cookiePath) {
-
+function readCookie (cookiePath) {
   var cookie
 
   try {
@@ -420,7 +374,6 @@ function readCookie(cookiePath) {
   }
 
   return cookie
-
 }
 
 /**
@@ -428,8 +381,7 @@ function readCookie(cookiePath) {
 * @param  {object} response   The express response object.
 * @param  {string} cookiePath The path to the cookie file.
 */
-function writeCookie(response, cookiePath) {
-
+function writeCookie (response, cookiePath) {
   try {
     debug('got response')
     var cookies = cookie.parse(response.headers['set-cookie'][0])
@@ -438,7 +390,6 @@ function writeCookie(response, cookiePath) {
   } catch (e) {
     debug(e)
   }
-
 }
 
 /**
@@ -446,21 +397,19 @@ function writeCookie(response, cookiePath) {
 * @param  {objext} params The params update.
 * @param  {object} config Optional config.
 */
-function updateLastSeen(params, config) {
-
-  qpm_media.updateLastSeen(params, config).then(function(ret) {
+function updateLastSeen (params, config) {
+  qpm_media.updateLastSeen(params, config).then(function (ret) {
     if (ret.conn) {
       var conn = ret.conn
       conn.close()
     }
-  }).catch(function(err){
+  }).catch(function (err) {
     if (err.conn) {
       var conn = err.conn
       conn.close()
     }
     console.error(err.err)
   })
-
 }
 
 /**
@@ -470,14 +419,13 @@ function updateLastSeen(params, config) {
  * @param  {object} config config
  * @return {object}        promise with balance
  */
-function balance(source, conn, config) {
-
+function balance (source, conn, config) {
   var config = require(__dirname + '/../config/config.js')
   debug('balance', config)
   var conn = wc_db.getConnection(config.db)
 
-  return new Promise(function(resolve, reject) {
-    webcredits.getBalance(source, conn, config, function(err,ret) {
+  return new Promise(function (resolve, reject) {
+    webcredits.getBalance(source, conn, config, function (err, ret) {
       debug('balance', 'entered')
       if (err) {
         debug('err', err)
@@ -488,7 +436,6 @@ function balance(source, conn, config) {
       }
     })
   })
-
 }
 
 /**
@@ -498,14 +445,13 @@ function balance(source, conn, config) {
  * @param  {object} config config
  * @return {object}        promise with balance
  */
-function pay(credit, config, conn) {
-
+function pay (credit, config, conn) {
   var config = require(__dirname + '/../config/config.js')
   debug('pay', config)
   var conn = wc_db.getConnection(config.db)
 
-  return new Promise(function(resolve, reject) {
-    webcredits.insert(credit, conn, config, function(err,ret) {
+  return new Promise(function (resolve, reject) {
+    webcredits.insert(credit, conn, config, function (err, ret) {
       if (err) {
         debug('pay', err)
       } else {
@@ -513,7 +459,6 @@ function pay(credit, config, conn) {
       }
     })
   })
-
 }
 
 /**
@@ -522,8 +467,7 @@ function pay(credit, config, conn) {
  * @param  {number} type  Type of file to get
  * @return {string}       Path to file
  */
-function getNextFile(files, type) {
-
+function getNextFile (files, type) {
   for (var i = 0; i < files.length; i++) {
     var file = files[i]
     if (/.ttl$/.test(file)) {
@@ -531,7 +475,6 @@ function getNextFile(files, type) {
     }
     return file
   }
-
 }
 
 // If one import this file, this is a module, otherwise a library
