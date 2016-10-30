@@ -17,7 +17,7 @@ var wc_db         = require('wc_db')
 
 
 var workbot = 'https://workbot.databox.me/profile/card#me'
-var cost    = 100
+var cost    = 40
 var type    = 0
 var root    = __dirname
 var seen    = []
@@ -35,12 +35,12 @@ function bin(argv) {
   var uri     = process.argv[2]  || 'https://localhost:4000/random_rate?type=getLastFragment'
   var cert    = process.argv[3]  || process.env['CERT']
   var display = process.argv[4]  || process.env['DISP'] || 'display'
-  var mode    = process.argv[5]  || 'buffer'
+  var mode    = process.argv[5]  || 'api'
   var user    = process.argv[6]  || 'http://melvincarvalho.com/#me'
   var tag     = process.argv[7]
   var path    = process.argv[8]  || 'https://localhost/data/buffer/video/'
   root        = process.argv[9]  || root
-  var safe    = process.argv[10] || 'on'
+  var safe    = process.argv[10] || 'off'
   var buffers = process.argv[11] || 2
 
   if (url) {
@@ -161,7 +161,19 @@ function getMedia(uri, cert, mode, user, tag, path, safe, buffers) {
         if (ret >= cost) {
           if (fn === 'qpm_media.getLastFragment') {
 
-            qpm_media.getLastFragment().then(function(row) {
+            var params = {}
+            if (tag) {
+              params.tag = tag
+            }
+            if (user) {
+              params.webid = user
+            }
+            if (safe && safe === 'off') {
+              params.safe = 0
+            } else {
+              params.safe = 1
+            }
+            qpm_media.getLastFragment(params).then(function(row) {
               row.conn.close()
               resolve(row.ret[0][0])
 
@@ -181,7 +193,19 @@ function getMedia(uri, cert, mode, user, tag, path, safe, buffers) {
 
           } else if (fn === 'qpm_media.getRatedFragment') {
 
-            qpm_media.getRatedFragment().then(function(row) {
+            var params = {}
+            if (tag) {
+              params.tag = tag
+            }
+            if (user) {
+              params.webid = user
+            }
+            if (safe && safe === 'off') {
+              params.safe = 0
+            } else {
+              params.safe = 1
+            }
+            qpm_media.getRatedFragment(params).then(function(row) {
               row.conn.close()
               resolve(row.ret[0][0])
 
@@ -200,7 +224,19 @@ function getMedia(uri, cert, mode, user, tag, path, safe, buffers) {
 
           } else if (fn === 'qpm_media.getRandomUnseenFragment') {
 
-            qpm_media.getRandomUnseenFragment().then(function(row) {
+            var params = {}
+            if (tag) {
+              params.tag = tag
+            }
+            if (user) {
+              params.webid = user
+            }
+            if (safe && safe === 'off') {
+              params.safe = 0
+            } else {
+              params.safe = 1
+            }
+            qpm_media.getRandomUnseenFragment(params).then(function(row) {
               row.conn.close()
               resolve(row.ret[0][0])
 
